@@ -1,0 +1,134 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 29
+    buildToolsVersion "29.0.3"
+
+    aaptOptions {
+        additionalParameters '--package-id', '0x80', '--emit-ids', "${project.rootDir.absolutePath}/runtime/main.id.txt"
+    }
+
+    defaultConfig {
+        applicationId "org.xplugin.demo.main"
+        minSdkVersion 19
+        targetSdkVersion 29
+        versionCode 2
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    flavorDimensions 'rt'
+    productFlavors {
+        rt_module1 {
+            dimension "rt"
+            applicationId "org.xplugin.demo.module1"
+        }
+        rt_module2 {
+            dimension "rt"
+            applicationId "org.xplugin.demo.module2"
+        }
+        plugin {
+            dimension "rt"
+            applicationId "org.xplugin.demo.main"
+        }
+    }
+
+    String outputPluginPath = null
+    def appIds = new HashSet();
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            if (variant.flavorName.startsWith("rt")) {
+                appIds.add(variant.applicationId)
+                variant.packageApplicationProvider.get().outputDirectory = new File(project.rootDir.absolutePath + "/runtime")
+                outputFileName = "${project.name}_${variant.flavorName}.apk"
+            } else if (variant.flavorName == "plugin") {
+                outputFileName = "${applicationId}.png"
+                outputPluginPath = output.outputFile
+            }
+        }
+    }
+
+    build.doLast {
+        println("#################### install plugin: " + outputPluginPath)
+        if (outputPluginPath != null && outputPluginPath.endsWith(".png")) {
+            copy {
+                from "${outputPluginPath}"
+                into "${project.rootDir.absolutePath}/app/src/main/assets/xpl_res/"
+            }
+
+            def mainIdFile = file("${project.rootDir.absolutePath}/runtime/main.id.txt")
+            if (mainIdFile.exists()) {
+                // cp emit-ids
+                def outputId = null;
+                mainIdFile.eachLine { line ->
+                    if (line.contains(":")) {
+                        outputId = line.split(":")[0]
+                        return
+                    }
+                }
+                println("#################### outputId:[${outputId}]")
+                for (String appId : appIds) {
+                    copy {
+                        from mainIdFile.absolutePath
+                        into "${project.rootDir.absolutePath}/runtime/"
+                        rename { fileName ->
+                            "${appId}.id.txt"
+                        }
+                    }
+                    def idFile = file("${project.rootDir.absolutePath}/runtime/${appId}.id.txt")
+                    def idContent = idFile.text.replaceAll("${outputId}", "${appId}")
+                    idFile.withPrintWriter { printWriter ->
+                        printWriter.println(idContent)
+                    }
+                }
+            } else {
+                throw new FileNotFoundException(mainIdFile.path, "please clean & rebuild the project")
+            }
+
+            println("install cmd: ${android.adbExe} push ${outputPluginPath} /sdcard/a_xpl/")
+            def command = "${android.adbExe} push ${outputPluginPath} /sdcard/a_xpl/"
+            def isWindows = System.properties['os.name'].contains("Windows")
+            if (isWindows) {
+                exec {
+                    ExecSpec execSpec ->
+                        executable 'cmd'
+                        args '/c', command
+                        ignoreExitValue true
+                }
+            } else {
+                exec {
+                    ExecSpec execSpec ->
+                        executable 'zsh'
+                        args '-c', command
+                        ignoreExitValue true
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    // for test
+    testImplementation 'junit:junit:4.13'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+
+    implementation fileTree(dir: "libs", include: ["*.jar"])
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+
+    compileOnly project(path: ':xplugin')
+    compileOnly 'org.xutils:xutils:3.8.12'
+}

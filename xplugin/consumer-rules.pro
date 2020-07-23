@@ -1,0 +1,4 @@
+-keepattributes Signature,*Annotation*
+-keep public class org.xplugin.** {*;}
+-keep public interface org.xplugin.** {*;}
+-keepclasseswithmembers class * extends org.xplugin.core.msg.AbsPluginEntry {*;}

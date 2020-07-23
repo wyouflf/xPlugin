@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.xplugin.core">
+
+    <application>
+        <service android:name=".app.ServicesProxy" />
+
+        <provider
+            android:name=".app.ContentProviderProxy"
+            android:authorities="${applicationId}.xPlugin.Provider"
+            android:exported="true"
+            android:grantUriPermissions="true" />
+
+        <activity
+            android:name="org.xplugin.tpl.DefaultActivity"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="standard" />
+
+        <activity
+            android:name="org.xplugin.tpl.DefaultActivity_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="standard"
+            android:theme="@android:style/Theme.Translucent" />
+
+        <!-- singleTop Activities -->
+        <activity
+            android:name="org.xplugin.tpl.SingleTopActivity_1"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTop" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTopActivity_2"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTop" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTopActivity_3"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTop" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTopActivity_4"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTop" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTopActivity_5"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTop" />
+
+        <activity
+            android:name="org.xplugin.tpl.SingleTopActivity_1_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@android:style/Theme.Translucent" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTopActivity_2_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@android:style/Theme.Translucent" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTopActivity_3_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@android:style/Theme.Translucent" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTopActivity_4_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@android:style/Theme.Translucent" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTopActivity_5_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@android:style/Theme.Translucent" />
+
+        <!-- singleTask Activities -->
+        <activity
+            android:name="org.xplugin.tpl.SingleTaskActivity_1"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTask" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTaskActivity_2"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTask" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTaskActivity_3"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTask" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTaskActivity_4"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTask" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTaskActivity_5"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTask" />
+
+        <activity
+            android:name="org.xplugin.tpl.SingleTaskActivity_1_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTaskActivity_2_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTaskActivity_3_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTaskActivity_4_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent" />
+        <activity
+            android:name="org.xplugin.tpl.SingleTaskActivity_5_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent" />
+
+        <!-- singleInstance Activities -->
+        <activity
+            android:name="org.xplugin.tpl.SingleInstanceActivity_1"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleInstance" />
+        <activity
+            android:name="org.xplugin.tpl.SingleInstanceActivity_2"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleInstance" />
+        <activity
+            android:name="org.xplugin.tpl.SingleInstanceActivity_3"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleInstance" />
+        <activity
+            android:name="org.xplugin.tpl.SingleInstanceActivity_4"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleInstance" />
+        <activity
+            android:name="org.xplugin.tpl.SingleInstanceActivity_5"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleInstance" />
+
+        <activity
+            android:name="org.xplugin.tpl.SingleInstanceActivity_1_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:theme="@android:style/Theme.Translucent" />
+        <activity
+            android:name="org.xplugin.tpl.SingleInstanceActivity_2_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:theme="@android:style/Theme.Translucent" />
+        <activity
+            android:name="org.xplugin.tpl.SingleInstanceActivity_3_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:theme="@android:style/Theme.Translucent" />
+        <activity
+            android:name="org.xplugin.tpl.SingleInstanceActivity_4_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:theme="@android:style/Theme.Translucent" />
+        <activity
+            android:name="org.xplugin.tpl.SingleInstanceActivity_5_t"
+            android:configChanges="screenSize|keyboardHidden|orientation"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:theme="@android:style/Theme.Translucent" />
+    </application>
+
+</manifest>

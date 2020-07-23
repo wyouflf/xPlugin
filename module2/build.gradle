@@ -1,0 +1,82 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 29
+    buildToolsVersion "29.0.3"
+
+    aaptOptions {
+        additionalParameters '--package-id', '0x80', '-I', "../runtime/main_rt_module2.apk", '--stable-ids', '../runtime/org.xplugin.demo.module2.id.txt'
+    }
+
+    defaultConfig {
+        applicationId "org.xplugin.demo.module2"
+        minSdkVersion 19
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    String outputPluginPath = null
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            outputFileName = "${applicationId}.png"
+            outputPluginPath = output.outputFile
+        }
+    }
+
+    build.doLast {
+        println("#################### install plugin: " + outputPluginPath)
+        if (outputPluginPath != null && outputPluginPath.endsWith(".png")) {
+            copy {
+                from "${outputPluginPath}"
+                into "${project.rootDir.absolutePath}/app/src/main/assets/xpl_res/"
+            }
+
+            println("install cmd: ${android.adbExe} push ${outputPluginPath} /sdcard/a_xpl/")
+            def command = "${android.adbExe} push ${outputPluginPath} /sdcard/a_xpl/"
+            def isWindows = System.properties['os.name'].contains("Windows")
+            if (isWindows) {
+                exec {
+                    ExecSpec execSpec ->
+                        executable 'cmd'
+                        args '/c', command
+                        ignoreExitValue true
+                }
+            } else {
+                exec {
+                    ExecSpec execSpec ->
+                        executable 'zsh'
+                        args '-c', command
+                        ignoreExitValue true
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    // for test
+    testImplementation 'junit:junit:4.13'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+
+    implementation fileTree(dir: "libs", include: ["*.jar"])
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+
+    compileOnly project(path: ':xplugin')
+    compileOnly 'org.xutils:xutils:3.8.12'
+}
