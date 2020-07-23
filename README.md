@@ -32,9 +32,20 @@
 
 ### 四. 初始化
 
-1. 初始化接口示例: [MyApplication](app/src/main/java/org/xplugin/demo/app/MyApplication.java)
-2. 在宿主或插件中的Manifest中添加 dependence 信息, 框架将自动异步加载依赖的插件模块, 参考 [AndroidManifest.xml](app/src/main/AndroidManifest.xml)
-3. gradle配置参考示例工程, 注意需要将插件模块的 packageId 设置为 0x80, 示例:
+1. gradle添加依赖:
+```groovy
+// 最低gradle编译插件版本要求 com.android.tools.build:gradle:4.0.0
+
+// 宿主中
+implementation 'org.xutils:xutils:3.8.12'
+implementation 'org.xplugin:xplugin:1.2.7'
+// 插件中
+compileOnly 'org.xutils:xutils:3.8.12' // 可选
+compileOnly 'org.xplugin:xplugin:1.2.7'
+```
+2. 初始化接口示例: [MyApplication](app/src/main/java/org/xplugin/demo/app/MyApplication.java)
+3. 在宿主或插件中的Manifest中添加 dependence 信息, 框架将自动异步加载依赖的插件模块, 参考 [AndroidManifest.xml](app/src/main/AndroidManifest.xml)
+4. gradle配置参考示例工程, 注意需要将插件模块的 packageId 设置为 0x80, 示例:
 ```groovy
 aaptOptions {
     additionalParameters '--package-id', '0x80'
