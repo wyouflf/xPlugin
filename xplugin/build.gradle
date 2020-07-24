@@ -5,7 +5,7 @@ apply plugin: 'com.jfrog.bintray'
 def siteUrl = 'https://github.com/wyouflf/xPlugin'
 def gitUrl = 'https://github.com/wyouflf/xPlugin.git'
 group = "org.xplugin"
-version = "1.2.7"
+version = "1.2.8"
 
 android {
     compileSdkVersion 29
@@ -18,7 +18,7 @@ android {
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 29
-        versionCode 20200722
+        versionCode 20200724
         versionName version
 
         consumerProguardFiles "consumer-rules.pro"
