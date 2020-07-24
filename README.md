@@ -27,7 +27,7 @@
 1. `PluginRuntime`: 插件初始化入口类, 在Application初始化时使用.
 2. `Installer`: 插件安装及加载的工具类, 从这里可以获取已安装和已加载的插件的信息.
 3. `PluginMsg`: 插件消息, 插件之间通信.
-4. `PluginEntry`: 消息注册的入口.
+4. `PluginEntry`: 消息注册的入口, 类名约定: $packageName.PluginEntry 的形式; 为方便集成到对外sdk, 宿主的PluginEntry可通过初始化接口指定.
 5. `Plugin`: 宿主(Host)和子模块(Module)的父类, 通过 Plugin.getPlugin(插件中的类型或其实例) 可以获取对应插件的信息.
 
 ### 四. 初始化
