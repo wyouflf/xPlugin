@@ -1,8 +1,10 @@
 package org.xplugin.core.app;
 
+import android.app.Activity;
 import android.app.Service;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.IBinder;
 import android.util.Log;
 
 import org.xplugin.core.ctx.Plugin;
@@ -27,8 +29,17 @@ import java.lang.reflect.Method;
                 case "overridePendingTransition":
                     // overridePendingTransition 是跨进程执行的, 必须试用宿主中的资源.
                     /*void overridePendingTransition(in IBinder token, in String packageName, int enterAnim, int exitAnim);*/
-                    args[2] = ActivityHelper.replaceOverridePendingTransitionAnimId((int) args[2]);
-                    args[3] = ActivityHelper.replaceOverridePendingTransitionAnimId((int) args[3]);
+                    Activity activity = null;
+                    try {
+                        Reflector activityThreadReflector = Reflector.on("android.app.ActivityThread");
+                        Object activityThreadObj = activityThreadReflector.method("currentActivityThread").call();
+                        activityThreadReflector.bind(activityThreadObj);
+                        activity = activityThreadReflector.method("getActivity", IBinder.class).call(args[0]);
+                    } catch (Throwable ignored) {
+                    }
+
+                    args[2] = ActivityHelper.replaceOverridePendingTransitionAnimId(activity, (int) args[2]);
+                    args[3] = ActivityHelper.replaceOverridePendingTransitionAnimId(activity, (int) args[3]);
                     return method.invoke(mBase, args);
                 case "startService": {
                     /*ComponentName startService(in IApplicationThread caller, in Intent service,

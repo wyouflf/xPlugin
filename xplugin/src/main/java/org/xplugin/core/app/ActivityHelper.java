@@ -9,8 +9,8 @@ import android.text.TextUtils;
 import android.view.ContextThemeWrapper;
 
 import org.xplugin.core.ctx.ContextProxy;
+import org.xplugin.core.ctx.Host;
 import org.xplugin.core.ctx.HostContextProxy;
-import org.xplugin.core.ctx.Module;
 import org.xplugin.core.ctx.Plugin;
 import org.xplugin.core.install.Config;
 import org.xplugin.core.install.Installer;
@@ -40,7 +40,7 @@ public final class ActivityHelper {
         overridePendingTransition_AnimId.put(moduleAimId, hostAnimId);
     }
 
-    public static int replaceOverridePendingTransitionAnimId(int moduleAimId) {
+    public static int replaceOverridePendingTransitionAnimId(Activity activity, int moduleAimId) {
         if (moduleAimId == 0) return 0;
 
         try {
@@ -50,9 +50,17 @@ public final class ActivityHelper {
             if (hostAnimId != 0) {
                 return hostAnimId;
             } else if (pkgResId >= 0x70 && pkgResId != 0x7F) {
-                Module runtimeModule = Installer.getRuntimeModule();
-                if (runtimeModule != null) {
-                    String name = runtimeModule.getContext().getResources().getResourceEntryName(moduleAimId);
+                Plugin module = null;
+                if (activity != null) {
+                    module = Plugin.getPlugin(activity);
+                    if (module instanceof Host) {
+                        return moduleAimId;
+                    }
+                } else {
+                    module = Installer.getRuntimeModule();
+                }
+                if (module != null) {
+                    String name = module.getContext().getResources().getResourceEntryName(moduleAimId);
                     hostAnimId = x.app().getResources().getIdentifier(name, "anim", x.app().getPackageName());
                     pkgResId = hostAnimId >>> 24;
                     if (hostAnimId != 0 && (pkgResId < 0x70 || pkgResId == 0x7F)) {
