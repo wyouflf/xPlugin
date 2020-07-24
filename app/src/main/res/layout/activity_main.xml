@@ -22,4 +22,10 @@
         android:onClick="onBtn1Click"
         android:text="Button" />
 
+    <LinearLayout
+        android:id="@+id/ll_test"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical" />
+
 </LinearLayout>
