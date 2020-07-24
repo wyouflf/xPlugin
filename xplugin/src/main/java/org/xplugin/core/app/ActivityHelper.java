@@ -46,14 +46,16 @@ public final class ActivityHelper {
         try {
             Integer hostAnimIdObj = overridePendingTransition_AnimId.get(moduleAimId);
             int hostAnimId = hostAnimIdObj == null ? 0 : hostAnimIdObj;
+            int pkgResId = moduleAimId >>> 24;
             if (hostAnimId != 0) {
                 return hostAnimId;
-            } else if ((moduleAimId & 0x80000000) == 0x80000000) {
+            } else if (pkgResId >= 0x70 && pkgResId != 0x7F) {
                 Module runtimeModule = Installer.getRuntimeModule();
                 if (runtimeModule != null) {
                     String name = runtimeModule.getContext().getResources().getResourceEntryName(moduleAimId);
                     hostAnimId = x.app().getResources().getIdentifier(name, "anim", x.app().getPackageName());
-                    if (hostAnimId != 0 && (hostAnimId & 0x80000000) != 0x80000000) {
+                    pkgResId = hostAnimId >>> 24;
+                    if (hostAnimId != 0 && (pkgResId < 0x70 || pkgResId == 0x7F)) {
                         overridePendingTransition_AnimId.put(moduleAimId, hostAnimId);
                         return hostAnimId;
                     }

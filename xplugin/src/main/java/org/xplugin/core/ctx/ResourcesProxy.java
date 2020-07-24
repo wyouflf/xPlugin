@@ -34,8 +34,11 @@ public class ResourcesProxy extends Resources {
                 id = super.getIdentifier(name, defType, defPackage);
             }
         }
-        if (id != 0 && (id & 0x80000000) == 0x80000000 && "id".equals(defType)) {
-            id = (id & 0x0000FFFF) | 0x7F800000;
+        if (id != 0 && "id".equals(defType)) {
+            int pkgResId = id >>> 24;
+            if (pkgResId > 0x7F) {
+                id = ((0x7F00 | pkgResId) << 16) | (id & 0x0000FFFF);
+            }
         }
         return id;
     }
