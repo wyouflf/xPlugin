@@ -38,16 +38,18 @@
 
 // 宿主中
 implementation 'org.xutils:xutils:3.8.12'
-implementation 'org.xplugin:xplugin:1.2.8'
+implementation 'org.xplugin:xplugin:1.2.9'
 // 插件中
 compileOnly 'org.xutils:xutils:3.8.12' // 可选
-compileOnly 'org.xplugin:xplugin:1.2.8'
+compileOnly 'org.xplugin:xplugin:1.2.9'
 ```
 2. 初始化接口示例: [MyApplication](app/src/main/java/org/xplugin/demo/app/MyApplication.java)
 3. 在宿主或插件中的Manifest中添加 dependence 信息, 框架将自动异步加载依赖的插件模块, 参考 [AndroidManifest.xml](app/src/main/AndroidManifest.xml)
-4. gradle配置参考示例工程, 注意需要将插件模块的 packageId 设置为 0x80, 示例:
+4. gradle配置参考示例工程, 注意插件模块的 packageId >= 0x70, 但不要设置为 0x7F, 示例:
 ```groovy
 aaptOptions {
+    // 使用小于0x80的packageId需要添加 '--allow-reserved-package-id'
+    // additionalParameters '--allow-reserved-package-id', '--package-id', '0x72',
     additionalParameters '--package-id', '0x80'
 }
 ```
