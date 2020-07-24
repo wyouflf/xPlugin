@@ -5,6 +5,8 @@ android {
     buildToolsVersion "29.0.3"
 
     aaptOptions {
+        // 使用小于0x80的packageId需要添加 '--allow-reserved-package-id'
+        // additionalParameters '--allow-reserved-package-id', '--package-id', '0x72',
         additionalParameters '--package-id', '0x80', '--emit-ids', "${project.rootDir.absolutePath}/runtime/main.id.txt"
     }
 

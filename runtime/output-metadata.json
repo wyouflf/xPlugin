@@ -5,7 +5,7 @@
     "kind": "Directory"
   },
   "applicationId": "org.xplugin.demo.module2",
-  "variantName": "rt_module2Debug",
+  "variantName": "rt_module2Release",
   "elements": [
     {
       "type": "SINGLE",
