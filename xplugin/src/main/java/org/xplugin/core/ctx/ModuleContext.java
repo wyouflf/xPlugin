@@ -12,6 +12,7 @@ import android.view.LayoutInflater;
 import org.xplugin.core.install.Config;
 import org.xplugin.core.install.Installer;
 import org.xplugin.core.util.PluginReflectUtil;
+import org.xutils.common.util.LogUtil;
 import org.xutils.x;
 
 import java.io.File;
@@ -105,11 +106,15 @@ public final class ModuleContext extends ContextThemeWrapper {
                         assetsPathList.add(this.pluginFile.getAbsolutePath());
                     }
 
+                    String webViewResourcesDir = PluginReflectUtil.getWebViewResourcesDir();
+                    if (!TextUtils.isEmpty(webViewResourcesDir)) {
+                        assetsPathList.add(webViewResourcesDir);
+                    }
+
                     for (String path : assetsPathList) {
                         int cookie = PluginReflectUtil.addAssetPath(this.assetManager, path);
                         if (cookie == 0) {
-                            throw new RuntimeException(
-                                    "Plugin init failed: addAssets Failed:" + path + "#" + cookie);
+                            LogUtil.e("addAssets Failed:" + path + "#" + cookie + "#" + pluginFile.getAbsolutePath());
                         }
                     }
                 }

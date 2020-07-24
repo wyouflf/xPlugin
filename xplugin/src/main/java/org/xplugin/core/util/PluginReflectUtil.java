@@ -1,9 +1,14 @@
 package org.xplugin.core.util;
 
+import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.os.Build;
+import android.text.TextUtils;
 
 import org.xutils.common.util.LogUtil;
+import org.xutils.x;
 
 import java.lang.reflect.Method;
 
@@ -11,6 +16,7 @@ public final class PluginReflectUtil {
 
     private static ReflectMethod addAssetPathMethod;
     private static ReflectMethod findClassMethod;
+    private static String sWebViewResourcesDir;
 
     private PluginReflectUtil() {
     }
@@ -93,5 +99,42 @@ public final class PluginReflectUtil {
         }
 
         return amsSingletonObj;
+    }
+
+    public static String getWebViewResourcesDir() {
+        if (sWebViewResourcesDir != null) {
+            return sWebViewResourcesDir;
+        }
+
+        String pkg = null;
+        try {
+            int sdkVersion = Build.VERSION.SDK_INT;
+            if (sdkVersion < Build.VERSION_CODES.LOLLIPOP) { // [ ~, 21)
+                return null;
+            } else if (sdkVersion < Build.VERSION_CODES.N) { // [21, 24)
+                pkg = Reflector.on("android.webkit.WebViewFactory").method("getWebViewPackageName").call();
+            } else { // [24, ~]
+                Context context = Reflector.on("android.webkit.WebViewFactory").method("getWebViewContextAndSetProvider").call();
+                if (context != null) {
+                    pkg = context.getApplicationInfo().packageName;
+                }
+            }
+        } catch (Throwable ex) {
+            LogUtil.e(ex.getMessage(), ex);
+        }
+
+        if (TextUtils.isEmpty(pkg)) {
+            pkg = "com.google.android.webview";
+        }
+
+        try {
+            PackageInfo pi = x.app().getPackageManager().getPackageInfo(pkg, PackageManager.GET_SHARED_LIBRARY_FILES);
+            sWebViewResourcesDir = pi.applicationInfo.sourceDir;
+            return sWebViewResourcesDir;
+        } catch (Throwable ex) {
+            LogUtil.e(ex.getMessage(), ex);
+        }
+
+        return null;
     }
 }
