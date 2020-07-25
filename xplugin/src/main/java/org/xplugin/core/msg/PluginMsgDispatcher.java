@@ -85,7 +85,6 @@ public final class PluginMsgDispatcher {
         Collection<AbsMsgInvoker> msgInvokers = invokerMap.getAllValues(msg.getCmd());
         if (msgInvokers != null && msgInvokers.size() > 0) {
             for (AbsMsgInvoker msgInvoker : msgInvokers) {
-                LogUtil.d("msg: " + msg.getCmd());
                 if (msgInvoker != null) {
                     if (msgInvoker instanceof BackgroundMsgInvoker) {
                         try {
