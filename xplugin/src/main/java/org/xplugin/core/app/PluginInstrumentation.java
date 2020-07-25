@@ -32,6 +32,8 @@ import org.xutils.common.util.LogUtil;
 import org.xutils.x;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Map;
 
 /**
@@ -43,17 +45,29 @@ import java.util.Map;
     private final Instrumentation mBase;
 
     public PluginInstrumentation(Instrumentation base) {
+        super();
+        try { // init fields
+            Field[] fields = base.getClass().getDeclaredFields();
+            for (Field field : fields) {
+                try {
+                    field.setAccessible(true);
+                    Object value = field.get(this);
+                    if (value == null || !Modifier.isFinal(field.getModifiers())) {
+                        field.set(this, field.get(base));
+                    }
+                } catch (Throwable ex) {
+                    LogUtil.e(ex.getMessage(), ex);
+                }
+            }
+        } catch (Throwable ex) {
+            LogUtil.e(ex.getMessage(), ex);
+        }
+
         mBase = base;
 
-        try {
+        try { // Android api 26 开始支持此方式.
             Constructor<?> constructor = ActivityMonitor.class.getDeclaredConstructor();
             constructor.setAccessible(true);
-            // 一般情况下 Android api 26 开始支持此方式.
-            // 使用动态代理替换 IActivityManager 的方式在新系统中也不再能拦截到 startActivity 方法.
-            // 因此xPlugin采用了3中当时拦截 startActivity 过程的 Intent 信息重定向, 以保证新老版本的兼容:
-            // 1. Instrumentation#ActivityMonitor
-            // 2. Instrumentation#execStartActivity
-            // 3. hook IActivityManager#startActivity
             ActivityMonitor activityMonitor = new ActivityMonitor() {
                 @Override
                 public ActivityResult onStartActivity(Intent intent) {
