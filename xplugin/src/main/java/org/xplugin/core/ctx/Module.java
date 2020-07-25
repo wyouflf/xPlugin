@@ -24,6 +24,7 @@ import java.util.Map;
  */
 public final class Module extends Plugin {
 
+    private Application application;
     private List<BroadcastReceiver> registerReceiverList;
 
     public Module(ModuleContext context, Config config) {
@@ -46,6 +47,9 @@ public final class Module extends Plugin {
     public void onDestroy() {
         super.onDestroy();
         this.removeReceivers();
+        if (application != null) {
+            application.onTerminate();
+        }
     }
 
     @Override
@@ -102,27 +106,27 @@ public final class Module extends Plugin {
                 public void run() {
                     try {
                         Instrumentation instrumentation = AndroidApiHook.getPluginInstrumentation();
-                        Application app = instrumentation.newApplication(Module.this.getClassLoader(), appClassName, Module.this.getContext());
+                        application = instrumentation.newApplication(Module.this.getClassLoader(), appClassName, Module.this.getContext());
                         Reflector appReflector = Reflector.on(Application.class);
                         try {
                             ReflectField mComponentCallbacksField = appReflector.field("mComponentCallbacks");
-                            mComponentCallbacksField.set(app, mComponentCallbacksField.get(x.app()));
+                            mComponentCallbacksField.set(application, mComponentCallbacksField.get(x.app()));
                         } catch (Throwable warn) {
                             LogUtil.w(warn.getMessage(), warn);
                         }
                         try {
                             ReflectField mActivityLifecycleCallbacksField = appReflector.field("mActivityLifecycleCallbacks");
-                            mActivityLifecycleCallbacksField.set(app, mActivityLifecycleCallbacksField.get(x.app()));
+                            mActivityLifecycleCallbacksField.set(application, mActivityLifecycleCallbacksField.get(x.app()));
                         } catch (Throwable warn) {
                             LogUtil.w(warn.getMessage(), warn);
                         }
                         try {
                             ReflectField mAssistCallbacksField = appReflector.field("mAssistCallbacks");
-                            mAssistCallbacksField.set(app, mAssistCallbacksField.get(x.app()));
+                            mAssistCallbacksField.set(application, mAssistCallbacksField.get(x.app()));
                         } catch (Throwable warn) {
                             LogUtil.w(warn.getMessage(), warn);
                         }
-                        instrumentation.callApplicationOnCreate(app);
+                        instrumentation.callApplicationOnCreate(application);
                     } catch (Throwable ex) {
                         LogUtil.e(ex.getMessage(), ex);
                     }
