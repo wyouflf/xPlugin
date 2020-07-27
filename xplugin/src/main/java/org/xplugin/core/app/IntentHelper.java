@@ -23,6 +23,7 @@ public class IntentHelper {
 
     // 记录目标Activity
     private final static String TARGET_ACTIVITY_PREF = "TARGET_ACTIVITY_PREF";
+    private final static String TARGET_ACTIVITY_PKG_KEY = "TARGET_ACTIVITY_PKG_KEY";
     private final static String TARGET_ACTIVITY_CLASS_KEY = "TARGET_ACTIVITY_CLASS_KEY";
 
     private static final int ACTIVITY_TPL_MAX_SIZE = 5;
@@ -38,17 +39,29 @@ public class IntentHelper {
             SharedPreferences pref = x.app().getSharedPreferences(TARGET_ACTIVITY_PREF, 0);
             String targetActivityClassName = pref.getString(TARGET_ACTIVITY_CLASS_KEY, null);
             if (targetActivityClassName != null) {
-                targetActivityClass = Installer.loadClass(targetActivityClassName);
+                String targetActivityPkg = pref.getString(TARGET_ACTIVITY_PKG_KEY, null);
+                try {
+                    Plugin plugin = Installer.containsModuleActivity(targetActivityPkg, targetActivityClassName);
+                    targetActivityClass = plugin.loadClass(targetActivityClassName);
+                } catch (Throwable ex) {
+                    LogUtil.e(ex.getMessage(), ex);
+                    targetActivityClass = Installer.loadClass(targetActivityClassName);
+                }
             }
         }
         return targetActivityClass;
     }
 
-    private static void setTargetActivityClass(Class<?> targetActivityClass) {
-        IntentHelper.targetActivityClass = targetActivityClass;
-        SharedPreferences pref = x.app().getSharedPreferences(TARGET_ACTIVITY_PREF, 0);
-        SharedPreferences.Editor editor = pref.edit().putString(TARGET_ACTIVITY_CLASS_KEY, targetActivityClass.getName());
-        editor.apply();
+    /*packaged*/
+    static void setTargetActivityClass(Class<?> targetActivityClass) {
+        if (IntentHelper.targetActivityClass != targetActivityClass) {
+            IntentHelper.targetActivityClass = targetActivityClass;
+            SharedPreferences pref = x.app().getSharedPreferences(TARGET_ACTIVITY_PREF, 0);
+            SharedPreferences.Editor editor = pref.edit()
+                    .putString(TARGET_ACTIVITY_PKG_KEY, Plugin.getPlugin(targetActivityClass).getConfig().getPackageName())
+                    .putString(TARGET_ACTIVITY_CLASS_KEY, targetActivityClass.getName());
+            editor.apply();
+        }
     }
 
     //////////////////////////////////// redirect2FakeActivity
