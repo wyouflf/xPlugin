@@ -475,7 +475,7 @@ import java.util.Map;
 
     @Override
     public void callActivityOnResume(Activity activity) {
-        if (Plugin.getPlugin(activity) instanceof Module) {
+        if (activity.getParent() == null && Plugin.getPlugin(activity) instanceof Module) {
             // 防止插件activity回收后重建时找不到对应的目标类型
             IntentHelper.setTargetActivityClass(activity.getClass());
         }
