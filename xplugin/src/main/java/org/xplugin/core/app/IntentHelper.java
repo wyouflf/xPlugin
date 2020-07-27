@@ -16,10 +16,14 @@ import org.xplugin.core.install.Installer;
 import org.xutils.common.util.LogUtil;
 import org.xutils.x;
 
+import java.util.ArrayList;
+
 public class IntentHelper {
 
     // Manifest注册的Activity模板名称约定
     public final static String ACTIVITY_TPL_PREFIX = "org.xplugin.tpl.";
+    // 附加intent信息
+    public final static String INTENT_TARGET_INFO_KEY = "$XPL_TARGET_INFO_KEY";
 
     // 记录目标Activity
     private final static String TARGET_ACTIVITY_PREF = "TARGET_ACTIVITY_PREF";
@@ -120,6 +124,7 @@ public class IntentHelper {
                 // redirect intent
                 String hostPkg = x.app().getPackageName();
                 String targetClassName = targetClass.getName();
+                ArrayList<String> targetInfo = new ArrayList<String>();
                 if (Installer.getHost().isActionRegistered(targetAction)
                         || Installer.getHost().isActivityRegistered(targetClassName)) {
                     origIntent.setAction(null);
@@ -128,6 +133,8 @@ public class IntentHelper {
                 } else {
                     String activityTpl = ACTIVITY_TPL_PREFIX + "DefaultActivity";
                     Plugin plugin = Plugin.getPlugin(targetClass);
+                    targetInfo.add(plugin.getConfig().getPackageName());
+                    targetInfo.add(targetClassName);
                     ActivityInfo info = plugin.getConfig().findActivityInfoByClassName(targetClassName);
                     if (info != null) {
                         switch (info.launchMode) {
@@ -165,6 +172,7 @@ public class IntentHelper {
                     origIntent.setAction(null);
                     origIntent.setPackage(hostPkg);
                     origIntent.setClassName(hostPkg, activityTpl);
+                    origIntent.putStringArrayListExtra(INTENT_TARGET_INFO_KEY, targetInfo);
                 }
             }
 

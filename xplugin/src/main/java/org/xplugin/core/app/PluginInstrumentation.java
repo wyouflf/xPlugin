@@ -34,6 +34,7 @@ import org.xutils.x;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Map;
 
 /**
@@ -428,6 +429,17 @@ import java.util.Map;
 
     @Override
     public Activity newActivity(ClassLoader cl, String className, Intent intent) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+        if (className.startsWith(IntentHelper.ACTIVITY_TPL_PREFIX)) {
+            ArrayList<String> targetInfo = intent.getStringArrayListExtra(IntentHelper.INTENT_TARGET_INFO_KEY);
+            if (targetInfo != null && targetInfo.size() >= 2) {
+                try {
+                    intent.setClassName(targetInfo.get(0), targetInfo.get(1));
+                    IntentHelper.redirect2FakeActivity(intent);
+                } catch (Throwable ex) {
+                    LogUtil.e(ex.getMessage(), ex);
+                }
+            }
+        }
         return mBase.newActivity(cl, className, intent);
     }
 
