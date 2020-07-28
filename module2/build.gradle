@@ -5,7 +5,7 @@ android {
     buildToolsVersion "29.0.3"
 
     aaptOptions {
-        additionalParameters '--package-id', '0x80', '-I', "../runtime/main_rt_module2.apk", '--stable-ids', '../runtime/org.xplugin.demo.module2.id.txt'
+        additionalParameters '--package-id', '0x80', '-I', "${rootDir}/runtime/main_rt_module2.apk", '--stable-ids', "${rootDir}/runtime/org.xplugin.demo.module2.id.txt"
     }
 
     defaultConfig {
