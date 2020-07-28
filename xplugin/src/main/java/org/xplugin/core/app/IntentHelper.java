@@ -183,7 +183,7 @@ public class IntentHelper {
         return targetClass;
     }
 
-    private static void replaceContentProviderUriIfNeeded(Intent intent) {
+    public static void replaceContentProviderUriIfNeeded(Intent intent) {
         Uri data = intent.getData();
         String type = intent.getType();
         if (data != null && data.getAuthority() != null) {

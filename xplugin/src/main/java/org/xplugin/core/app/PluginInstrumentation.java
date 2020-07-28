@@ -429,7 +429,7 @@ import java.util.Map;
 
     @Override
     public Activity newActivity(ClassLoader cl, String className, Intent intent) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        if (className.startsWith(IntentHelper.ACTIVITY_TPL_PREFIX)) {
+        if (className != null && className.startsWith(IntentHelper.ACTIVITY_TPL_PREFIX)) {
             ArrayList<String> targetInfo = intent.getStringArrayListExtra(IntentHelper.INTENT_TARGET_INFO_KEY);
             if (targetInfo != null && targetInfo.size() >= 2) {
                 try {
@@ -487,10 +487,6 @@ import java.util.Map;
 
     @Override
     public void callActivityOnResume(Activity activity) {
-        if (activity.getParent() == null && Plugin.getPlugin(activity) instanceof Module) {
-            // 防止插件activity回收后重建时找不到对应的目标类型
-            IntentHelper.setTargetActivityClass(activity.getClass());
-        }
         mBase.callActivityOnResume(activity);
     }
 
