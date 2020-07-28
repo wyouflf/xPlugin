@@ -42,7 +42,7 @@ android {
         if (outputPluginPath != null && outputPluginPath.endsWith(".png")) {
             copy {
                 from "${outputPluginPath}"
-                into "${project.rootDir.absolutePath}/app/src/main/assets/xpl_res/"
+                into "${rootDir}/app/src/main/assets/xpl_res/"
             }
 
             println("install cmd: ${android.adbExe} push ${outputPluginPath} /sdcard/a_xpl/")
@@ -78,5 +78,5 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.1.0'
 
     compileOnly project(path: ':xplugin')
-    compileOnly 'org.xutils:xutils:3.8.12'
+    compileOnly 'org.xutils:xutils:3.9.0'
 }

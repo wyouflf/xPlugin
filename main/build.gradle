@@ -7,7 +7,7 @@ android {
     aaptOptions {
         // 使用小于0x80的packageId需要添加 '--allow-reserved-package-id'
         // additionalParameters '--allow-reserved-package-id', '--package-id', '0x72',
-        additionalParameters '--package-id', '0x80', '--emit-ids', "${project.rootDir.absolutePath}/runtime/main.id.txt"
+        additionalParameters '--package-id', '0x80', '--emit-ids', "${rootDir}/runtime/main.id.txt"
     }
 
     defaultConfig {
@@ -53,7 +53,7 @@ android {
         variant.outputs.all { output ->
             if (variant.flavorName.startsWith("rt")) {
                 appIds.add(variant.applicationId)
-                variant.packageApplicationProvider.get().outputDirectory = new File(project.rootDir.absolutePath + "/runtime")
+                variant.packageApplicationProvider.get().outputDirectory = new File("${rootDir}/runtime")
                 outputFileName = "${project.name}_${variant.flavorName}.apk"
             } else if (variant.flavorName == "plugin") {
                 outputFileName = "${applicationId}.png"
@@ -67,10 +67,10 @@ android {
         if (outputPluginPath != null && outputPluginPath.endsWith(".png")) {
             copy {
                 from "${outputPluginPath}"
-                into "${project.rootDir.absolutePath}/app/src/main/assets/xpl_res/"
+                into "${rootDir}/app/src/main/assets/xpl_res/"
             }
 
-            def mainIdFile = file("${project.rootDir.absolutePath}/runtime/main.id.txt")
+            def mainIdFile = file("${rootDir}/runtime/main.id.txt")
             if (mainIdFile.exists()) {
                 // cp emit-ids
                 def outputId = null;
@@ -84,12 +84,12 @@ android {
                 for (String appId : appIds) {
                     copy {
                         from mainIdFile.absolutePath
-                        into "${project.rootDir.absolutePath}/runtime/"
+                        into "${rootDir}/runtime/"
                         rename { fileName ->
                             "${appId}.id.txt"
                         }
                     }
-                    def idFile = file("${project.rootDir.absolutePath}/runtime/${appId}.id.txt")
+                    def idFile = file("${rootDir}/runtime/${appId}.id.txt")
                     def idContent = idFile.text.replaceAll("${outputId}", "${appId}")
                     idFile.withPrintWriter { printWriter ->
                         printWriter.println(idContent)
@@ -132,5 +132,5 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
 
     compileOnly project(path: ':xplugin')
-    compileOnly 'org.xutils:xutils:3.8.12'
+    compileOnly 'org.xutils:xutils:3.9.0'
 }

@@ -37,10 +37,10 @@
 // 最低gradle编译插件版本要求 com.android.tools.build:gradle:4.0.0
 
 // 宿主中
-implementation 'org.xutils:xutils:3.8.12'
+implementation 'org.xutils:xutils:3.9.0'
 implementation 'org.xplugin:xplugin:1.3.0'
 // 插件中
-compileOnly 'org.xutils:xutils:3.8.12' // 可选
+compileOnly 'org.xutils:xutils:3.9.0' // 可选
 compileOnly 'org.xplugin:xplugin:1.3.0'
 ```
 2. 初始化接口示例: [MyApplication](app/src/main/java/org/xplugin/demo/app/MyApplication.java)
