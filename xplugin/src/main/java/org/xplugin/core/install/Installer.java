@@ -1,5 +1,6 @@
 package org.xplugin.core.install;
 
+import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.res.AssetManager;
 import android.os.Build;
@@ -73,10 +74,13 @@ public final class Installer {
     private final static String EXTERNAL_PLUGIN_DIR_NAME = "a_xpl";
 
     // plugins & init event
+    @SuppressLint("StaticFieldLeak")
     private static Host host;
+    @SuppressLint("StaticFieldLeak")
     private static Module runtimeModule;
     private static PluginInstallListener installEvent;
     private static volatile boolean initFinished = false;
+    private final static HashSet<String> installedModules = new HashSet<String>(5);
     private final static ConcurrentHashMap<String, Module> loadedModules = new ConcurrentHashMap<String, Module>(5);
 
 
@@ -204,8 +208,6 @@ public final class Installer {
 
     /**
      * 获取已加载的模块
-     *
-     * @return
      */
     public static Map<String, Module> getLoadedModules() {
         return new HashMap<String, Module>(loadedModules);
@@ -213,29 +215,11 @@ public final class Installer {
 
     /**
      * 获取已安装的模块packageName
-     *
-     * @return
      */
     public static Set<String> getInstalledModules() {
-        final HashSet<String> result = new HashSet<String>();
-        File installDir = x.app().getDir(MODULE_INSTALL_DIR_NAME, 0);
-        File[] pkgDirs = installDir.listFiles();
-        if (pkgDirs != null) {
-            for (File pkgDir : pkgDirs) {
-                if (pkgDir.isDirectory()) {
-                    String pkgName = pkgDir.getName();
-                    String[] children = pkgDir.list();
-                    if (children != null && children.length > 0) {
-                        try {
-                            File moduleFile = getInstalledModuleFile(pkgName);
-                            if (moduleFile != null && moduleFile.exists()) {
-                                result.add(pkgName);
-                            }
-                        } catch (Throwable ignored) {
-                        }
-                    }
-                }
-            }
+        HashSet<String> result = null;
+        synchronized (installedModules) {
+            result = new HashSet<String>(installedModules);
         }
         return result;
     }
@@ -863,6 +847,29 @@ public final class Installer {
                     LogUtil.d("delete old files of modules", ex);
                 }
 
+                // init installedModules
+                synchronized (installedModules) {
+                    File installDir = x.app().getDir(MODULE_INSTALL_DIR_NAME, 0);
+                    File[] pkgDirs = installDir != null ? installDir.listFiles() : null;
+                    if (pkgDirs != null) {
+                        for (File pkgDir : pkgDirs) {
+                            if (pkgDir.isDirectory()) {
+                                String pkgName = pkgDir.getName();
+                                String[] children = pkgDir.list();
+                                if (children != null && children.length > 0) {
+                                    try {
+                                        File moduleFile = getInstalledModuleFile(pkgName);
+                                        if (moduleFile != null && moduleFile.exists()) {
+                                            installedModules.add(pkgName);
+                                        }
+                                    } catch (Throwable ignored) {
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // 1. decompress modules from assets
                 try {
                     decompressAssetsModules();
@@ -1039,6 +1046,10 @@ public final class Installer {
             // 3. 安装
             installTempModuleFile(tempFile);
 
+            synchronized (installedModules) {
+                installedModules.add(config.packageName);
+            }
+
             // 4. 加载
             if (!needRestart) {
                 result = loadInstalledModule(config.packageName, true, this.newLoadedPlugins);
@@ -1168,6 +1179,10 @@ public final class Installer {
             File path = getInstalledModuleDir(packageName);
             if (!IOUtil.deleteFileOrDir(path)) {
                 needRestart = true;
+            }
+
+            synchronized (installedModules) {
+                installedModules.remove(packageName);
             }
 
             Module module = loadedModules.remove(packageName);
