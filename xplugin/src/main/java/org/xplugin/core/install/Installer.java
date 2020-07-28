@@ -847,6 +847,29 @@ public final class Installer {
                     LogUtil.d("delete old files of modules", ex);
                 }
 
+                // init installedModules
+                synchronized (installedModules) {
+                    File installDir = x.app().getDir(MODULE_INSTALL_DIR_NAME, 0);
+                    File[] pkgDirs = installDir != null ? installDir.listFiles() : null;
+                    if (pkgDirs != null) {
+                        for (File pkgDir : pkgDirs) {
+                            if (pkgDir.isDirectory()) {
+                                String pkgName = pkgDir.getName();
+                                String[] children = pkgDir.list();
+                                if (children != null && children.length > 0) {
+                                    try {
+                                        File moduleFile = getInstalledModuleFile(pkgName);
+                                        if (moduleFile != null && moduleFile.exists()) {
+                                            installedModules.add(pkgName);
+                                        }
+                                    } catch (Throwable ignored) {
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // 1. decompress modules from assets
                 try {
                     decompressAssetsModules();
