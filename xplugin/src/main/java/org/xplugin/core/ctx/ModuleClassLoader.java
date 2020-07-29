@@ -9,13 +9,14 @@ import java.io.File;
 
 import dalvik.system.DexClassLoader;
 
-/*package*/ final class ModuleClassLoader extends DexClassLoader {
+public final class ModuleClassLoader extends DexClassLoader {
 
     private Module module;
 
     private final Config config;
     private final ClassLoader bootClassLoader;
     private final ClassLoader appClassLoader;
+    private ClassLoader additionClassLoader;
 
     public ModuleClassLoader(File pluginFile, File pluginDir, Config config) {
         super(  // dexPath
@@ -39,6 +40,10 @@ import dalvik.system.DexClassLoader;
 
     public Module getModule() {
         return module;
+    }
+
+    public void setAdditionClassLoader(ClassLoader additionClassLoader) {
+        this.additionClassLoader = additionClassLoader;
     }
 
     @Override
@@ -80,6 +85,14 @@ import dalvik.system.DexClassLoader;
                 } catch (Throwable ex) {
                     cause = ex;
                 }
+            }
+        }
+
+        if (additionClassLoader != null) {
+            try {
+                result = additionClassLoader.loadClass(className);
+            } catch (Throwable ex) {
+                cause = ex;
             }
         }
 
