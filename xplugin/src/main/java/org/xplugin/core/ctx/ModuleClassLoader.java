@@ -77,18 +77,7 @@ public final class ModuleClassLoader extends DexClassLoader {
             }
         }
 
-        if (result == null) { // 从 Runtime Module 查找
-            Module runtimeModule = Installer.getRuntimeModule();
-            if (runtimeModule != null && runtimeModule != module) {
-                try {
-                    result = PluginReflectUtil.findClass(runtimeModule.getClassLoader(), className);
-                } catch (Throwable ex) {
-                    cause = ex;
-                }
-            }
-        }
-
-        if (additionClassLoader != null) {
+        if (result == null && additionClassLoader != null) {
             try {
                 result = additionClassLoader.loadClass(className);
             } catch (Throwable ex) {
@@ -99,6 +88,14 @@ public final class ModuleClassLoader extends DexClassLoader {
         if (result == null && !resolve) { // 从app classLoader查找
             try {
                 result = PluginReflectUtil.findClass(appClassLoader, className);
+            } catch (Throwable ex) {
+                cause = ex;
+            }
+        }
+
+        if (result == null && !resolve) { // 从其他 Module 查找
+            try {
+                result = HostParentClassLoader.findClassFromModules(className, this.module);
             } catch (Throwable ex) {
                 cause = ex;
             }

@@ -5,6 +5,7 @@ import android.app.Application;
 import android.content.res.AssetManager;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Looper;
 import android.text.TextUtils;
 
 import org.xplugin.core.PluginRuntime;
@@ -252,7 +253,18 @@ public final class Installer {
                     @Override
                     public void onFinished() {
                     }
-                }));
+                }) {
+                    @Override
+                    public Looper customLooper() {
+                        // 使用子线程Looper, 为防止在MainLooper中wait操作锁死的情况.
+                        Looper looper = Looper.myLooper();
+                        if (looper == null) {
+                            Looper.prepare();
+                            looper = Looper.myLooper();
+                        }
+                        return looper;
+                    }
+                });
             }
         } else if (TextUtils.isEmpty(optPkg) || x.app().getPackageName().equals(optPkg)) {
             if (runtimeModule != null && runtimeModule.isActivityRegistered(className)) {
@@ -296,7 +308,18 @@ public final class Installer {
                     @Override
                     public void onFinished() {
                     }
-                }));
+                }) {
+                    @Override
+                    public Looper customLooper() {
+                        // 使用子线程Looper, 为防止在MainLooper中wait操作锁死的情况.
+                        Looper looper = Looper.myLooper();
+                        if (looper == null) {
+                            Looper.prepare();
+                            looper = Looper.myLooper();
+                        }
+                        return looper;
+                    }
+                });
             }
         } else if (TextUtils.isEmpty(optPkg) || x.app().getPackageName().equals(optPkg)) {
             if (runtimeModule != null && runtimeModule.isServiceRegistered(className)) {

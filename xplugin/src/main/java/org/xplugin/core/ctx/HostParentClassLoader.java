@@ -7,8 +7,11 @@ import org.xplugin.core.util.PluginReflectUtil;
 import org.xplugin.core.util.ReflectField;
 import org.xplugin.core.util.Reflector;
 import org.xutils.common.util.LogUtil;
+import org.xutils.x;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /*package*/ final class HostParentClassLoader extends ClassLoader {
 
@@ -74,13 +77,16 @@ import java.util.Map;
             result = PluginReflectUtil.findClass(appClassLoader, className);
         }
 
-        if (className.startsWith(IntentHelper.ACTIVITY_TPL_PREFIX)) {
+        if (result == null && className.startsWith(IntentHelper.ACTIVITY_TPL_PREFIX)) {
             Installer.waitForInit();
             result = IntentHelper.getTargetActivityClass();
         }
 
         if (result == null) {
-            result = findClassFromModules(className);
+            try {
+                result = findClassFromModules(className, null);
+            } catch (Throwable ignored) {
+            }
         }
 
         if (result == null) {
@@ -90,29 +96,60 @@ import java.util.Map;
         return result;
     }
 
-    // 从已加载的模块查找类型
-    private Class<?> findClassFromModules(String className) {
-        if (className.endsWith("Activity")
-                || className.endsWith("Fragment")
-                || className.endsWith("Service")
-                || className.endsWith("Receiver")
-                || className.endsWith("Provider")) {
-            Installer.waitForInit();
-        }
+    /*package*/
+    static Class<?> findClassFromModules(final String className, Module exclude) throws Throwable {
         Class<?> result = null;
-        Map<String, Module> moduleMap = Installer.getLoadedModules();
-        if (moduleMap != null && moduleMap.size() > 0) {
-            for (Module module : moduleMap.values()) {
-                try {
-                    // 不要让ModuleClassLoader的findClass查找其他依赖, 最好不要覆盖它.
-                    result = ((ModuleClassLoader) module.getClassLoader()).loadClass(className, true);
-                    if (result != null) {
-                        break;
+
+        HashSet<String> excludeSet = new HashSet<String>();
+        if (exclude != null) {
+            excludeSet.add(exclude.getConfig().getPackageName());
+        }
+
+        Module runtimeModule = Installer.getRuntimeModule();
+        if (runtimeModule != null && runtimeModule != exclude) {
+            try {
+                excludeSet.add(runtimeModule.getConfig().getPackageName());
+                result = runtimeModule.loadClass(className);
+            } catch (Throwable ignored) {
+            }
+        }
+
+        if (result == null) {
+            Map<String, Module> moduleMap = Installer.getLoadedModules();
+            if (!moduleMap.isEmpty()) {
+                for (Module module : moduleMap.values()) {
+                    if (module != runtimeModule && module != exclude) {
+                        try {
+                            excludeSet.add(module.getConfig().getPackageName());
+                            result = module.loadClass(className);
+                            if (result != null) {
+                                break;
+                            }
+                        } catch (Throwable ignored) {
+                        }
                     }
-                } catch (Throwable ignored) {
                 }
             }
         }
+
+        if (result == null && !className.startsWith("android.") && !className.startsWith("com.android.")) {
+            Set<String> installedModules = Installer.getInstalledModules();
+            if (!installedModules.isEmpty()) {
+                for (String pkg : installedModules) {
+                    if (!excludeSet.contains(pkg)) {
+                        try {
+                            Module module = x.task().startSync(new Installer.LoadTask(pkg, null));
+                            result = module.loadClass(className);
+                            if (result != null) {
+                                break;
+                            }
+                        } catch (Throwable ignored) {
+                        }
+                    }
+                }
+            }
+        }
+
         return result;
     }
 }
