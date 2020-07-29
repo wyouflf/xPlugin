@@ -26,6 +26,7 @@ import android.widget.Toast;
 import org.xplugin.core.ctx.HostContextProxy;
 import org.xplugin.core.ctx.Module;
 import org.xplugin.core.ctx.Plugin;
+import org.xplugin.core.install.Installer;
 import org.xplugin.core.util.ReflectMethod;
 import org.xplugin.core.util.Reflector;
 import org.xutils.common.util.LogUtil;
@@ -429,16 +430,28 @@ import java.util.Map;
 
     @Override
     public Activity newActivity(ClassLoader cl, String className, Intent intent) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        if (className != null && className.startsWith(IntentHelper.ACTIVITY_TPL_PREFIX)) {
-            ArrayList<String> targetInfo = intent.getStringArrayListExtra(IntentHelper.INTENT_TARGET_INFO_KEY);
-            if (targetInfo != null && targetInfo.size() >= 2) {
-                try {
-                    intent.setClassName(targetInfo.get(0), targetInfo.get(1));
-                    IntentHelper.redirect2FakeActivity(intent);
-                } catch (Throwable ex) {
-                    LogUtil.e(ex.getMessage(), ex);
+        try {
+            if (className != null && className.startsWith(IntentHelper.ACTIVITY_TPL_PREFIX)) {
+                ClassLoader loader = null;
+                Module runtimeModule = Installer.getRuntimeModule();
+                if (runtimeModule != null) {
+                    loader = runtimeModule.getContext().getClassLoader();
+                } else {
+                    loader = Installer.getHost().getContext().getClassLoader();
+                }
+                intent.setExtrasClassLoader(loader);
+                ArrayList<String> targetInfo = intent.getStringArrayListExtra(IntentHelper.INTENT_TARGET_INFO_KEY);
+                if (targetInfo != null && targetInfo.size() >= 2) {
+                    try {
+                        intent.setClassName(targetInfo.get(0), targetInfo.get(1));
+                        IntentHelper.redirect2FakeActivity(intent);
+                    } catch (Throwable ex) {
+                        LogUtil.e(ex.getMessage(), ex);
+                    }
                 }
             }
+        } catch (Throwable ex) {
+            LogUtil.e(ex.getMessage(), ex);
         }
         return mBase.newActivity(cl, className, intent);
     }
