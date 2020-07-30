@@ -7,6 +7,7 @@ import org.xutils.common.util.LogUtil;
 
 import java.io.File;
 
+import dalvik.system.BaseDexClassLoader;
 import dalvik.system.DexClassLoader;
 
 public final class ModuleClassLoader extends DexClassLoader {
@@ -79,7 +80,11 @@ public final class ModuleClassLoader extends DexClassLoader {
 
         if (result == null && additionClassLoader != null) {
             try {
-                result = additionClassLoader.loadClass(className);
+                if (additionClassLoader instanceof BaseDexClassLoader) {
+                    result = PluginReflectUtil.findClass(additionClassLoader, className);
+                } else {
+                    result = additionClassLoader.loadClass(className);
+                }
             } catch (Throwable ex) {
                 cause = ex;
             }
