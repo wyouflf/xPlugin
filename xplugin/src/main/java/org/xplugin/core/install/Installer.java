@@ -5,7 +5,6 @@ import android.app.Application;
 import android.content.res.AssetManager;
 import android.os.Build;
 import android.os.Environment;
-import android.os.Looper;
 import android.text.TextUtils;
 
 import org.xplugin.core.PluginRuntime;
@@ -226,45 +225,16 @@ public final class Installer {
     }
 
     public static Plugin containsModuleActivity(String optPkg, final String className) throws Throwable {
-        final Plugin[] plugins = {null};
-
         Set<String> installed = getInstalledModules();
         if (installed.contains(optPkg)) {
             Plugin plugin = loadedModules.get(optPkg);
             if (plugin != null && plugin.isActivityRegistered(className)) {
                 return plugin;
             } else {
-                x.task().startSync(new LoadTask(optPkg, new Callback.CommonCallback<Module>() {
-                    @Override
-                    public void onSuccess(Module result) {
-                        if (result.isActivityRegistered(className)) {
-                            plugins[0] = result;
-                        }
-                    }
-
-                    @Override
-                    public void onError(Throwable ex, boolean isOnCallback) {
-                    }
-
-                    @Override
-                    public void onCancelled(CancelledException cex) {
-                    }
-
-                    @Override
-                    public void onFinished() {
-                    }
-                }) {
-                    @Override
-                    public Looper customLooper() {
-                        // 使用子线程Looper, 为防止在MainLooper中wait操作锁死的情况.
-                        Looper looper = Looper.myLooper();
-                        if (looper == null) {
-                            Looper.prepare();
-                            looper = Looper.myLooper();
-                        }
-                        return looper;
-                    }
-                });
+                Module module = x.task().startSync(new LoadTask(optPkg, null));
+                if (module.isActivityRegistered(className)) {
+                    return module;
+                }
             }
         } else if (TextUtils.isEmpty(optPkg) || x.app().getPackageName().equals(optPkg)) {
             if (runtimeModule != null && runtimeModule.isActivityRegistered(className)) {
@@ -277,49 +247,20 @@ public final class Installer {
             }
         }
 
-        return plugins[0];
+        return null;
     }
 
     public static Plugin containsModuleService(String optPkg, final String className) throws Throwable {
-        final Plugin[] plugins = {null};
-
         Set<String> installed = getInstalledModules();
         if (installed.contains(optPkg)) {
             Plugin plugin = loadedModules.get(optPkg);
             if (plugin != null && plugin.isServiceRegistered(className)) {
                 return plugin;
             } else {
-                x.task().startSync(new LoadTask(optPkg, new Callback.CommonCallback<Module>() {
-                    @Override
-                    public void onSuccess(Module result) {
-                        if (result.isServiceRegistered(className)) {
-                            plugins[0] = result;
-                        }
-                    }
-
-                    @Override
-                    public void onError(Throwable ex, boolean isOnCallback) {
-                    }
-
-                    @Override
-                    public void onCancelled(CancelledException cex) {
-                    }
-
-                    @Override
-                    public void onFinished() {
-                    }
-                }) {
-                    @Override
-                    public Looper customLooper() {
-                        // 使用子线程Looper, 为防止在MainLooper中wait操作锁死的情况.
-                        Looper looper = Looper.myLooper();
-                        if (looper == null) {
-                            Looper.prepare();
-                            looper = Looper.myLooper();
-                        }
-                        return looper;
-                    }
-                });
+                Module module = x.task().startSync(new LoadTask(optPkg, null));
+                if (module.isServiceRegistered(className)) {
+                    return module;
+                }
             }
         } else if (TextUtils.isEmpty(optPkg) || x.app().getPackageName().equals(optPkg)) {
             if (runtimeModule != null && runtimeModule.isServiceRegistered(className)) {
@@ -332,7 +273,7 @@ public final class Installer {
             }
         }
 
-        return plugins[0];
+        return null;
     }
 
     /**

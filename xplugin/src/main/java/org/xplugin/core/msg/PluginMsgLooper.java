@@ -1,6 +1,5 @@
 package org.xplugin.core.msg;
 
-import android.os.Looper;
 import android.text.TextUtils;
 
 import org.xplugin.core.PluginRuntime;
@@ -10,7 +9,6 @@ import org.xplugin.core.ctx.Plugin;
 import org.xplugin.core.exception.PluginMsgRejectException;
 import org.xplugin.core.install.Installer;
 import org.xplugin.core.install.PluginInstallListener;
-import org.xutils.common.Callback;
 import org.xutils.common.task.PriorityExecutor;
 import org.xutils.common.util.LogUtil;
 import org.xutils.x;
@@ -20,7 +18,6 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by jiaolei on 15/6/10.
@@ -218,54 +215,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
             // 尝试加载未自动加载的插件包
             if (!TextUtils.isEmpty(pkg)) {
-                //Installer.loadModule(pkg, null);
                 try {
-                    final AtomicBoolean loadError = new AtomicBoolean(false);
-                    x.task().startSync(new Installer.LoadTask(pkg, new Callback.CommonCallback<Module>() {
-                        @Override
-                        public void onSuccess(Module result) {
-                            sendMsgInternalSync(msg, null, true);
-                        }
-
-                        @Override
-                        public void onError(Throwable ex, boolean isOnCallback) {
-                            loadError.set(true);
-                            synchronized (MSG_QUEUE) {
-                                MSG_QUEUE.remove(msg);
-                            }
-                            MsgCallback msgCallback = msg.getCallback();
-                            if (msgCallback != null) { // 及时反馈加载阶段的错误信息
-                                msgCallback.onError(ex, isOnCallback);
-                            }
-                        }
-
-                        @Override
-                        public void onCancelled(CancelledException cex) {
-                        }
-
-                        @Override
-                        public void onFinished() {
-                            if (loadError.get()) {
-                                MsgCallback msgCallback = msg.getCallback();
-                                if (msgCallback != null) {
-                                    msgCallback.onFinished();
-                                }
-                            }
-                        }
-                    }) {
-                        @Override
-                        public Looper customLooper() {
-                            // 使用子线程Looper, 为防止在MainLooper中wait操作锁死的情况.
-                            Looper looper = Looper.myLooper();
-                            if (looper == null) {
-                                Looper.prepare();
-                                looper = Looper.myLooper();
-                            }
-                            return looper;
-                        }
-                    });
+                    x.task().startSync(new Installer.LoadTask(pkg, null));
+                    sendMsgInternalSync(msg, null, true);
                 } catch (Throwable ex) {
                     LogUtil.e(ex.getMessage(), ex);
+                    MsgCallback msgCallback = msg.getCallback();
+                    if (msgCallback != null) { // 及时反馈加载阶段的错误信息
+                        try {
+                            msgCallback.onError(ex, false);
+                        } catch (Throwable ignored) {
+                        }
+                    }
+                } finally {
+                    MsgCallback msgCallback = msg.getCallback();
+                    if (msgCallback != null) {
+                        try {
+                            msgCallback.onFinished();
+                        } catch (Throwable ignored) {
+                        }
+                    }
                 }
             } else { // TextUtils.isEmpty(pkg)
                 msg.setNoTargetMatched(true); // 未匹配
