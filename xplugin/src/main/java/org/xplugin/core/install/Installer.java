@@ -498,6 +498,9 @@ public final class Installer {
                 if (config != null) {
                     result = new Module(new ModuleContext(moduleFile, config), config);
                     result.init();
+                    if (packageName.equals(PluginRuntime.getRuntimeListener().getRuntimePkg())) {
+                        HostContextProxy.onRuntimeModuleLoaded(result);
+                    }
                     loadedModules.put(packageName, result);
                     newLoadedPlugins.put(packageName, result);
                     result.onLoaded();
@@ -894,9 +897,6 @@ public final class Installer {
                     String runtimePkg = PluginRuntime.getRuntimeListener().getRuntimePkg();
                     if (!TextUtils.isEmpty(runtimePkg)) {
                         runtimeModule = loadInstalledModule(runtimePkg, false, this.newLoadedPlugins);
-                        if (runtimeModule != null) {
-                            HostContextProxy.onRuntimeModuleLoaded(runtimeModule);
-                        }
                     }
                 } catch (Throwable ex) {
                     exception.addEx(ex);

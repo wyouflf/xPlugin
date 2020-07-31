@@ -11,9 +11,7 @@ import android.view.LayoutInflater;
 
 import org.xplugin.core.install.Installer;
 import org.xplugin.core.util.PluginReflectUtil;
-import org.xplugin.core.util.ReflectField;
 import org.xplugin.core.util.Reflector;
-import org.xutils.common.task.AbsTask;
 import org.xutils.common.util.LogUtil;
 import org.xutils.x;
 
@@ -22,111 +20,115 @@ import java.util.WeakHashMap;
 
 public final class HostContextProxy extends ContextThemeWrapper {
 
-    private static final WeakHashMap<Activity, HostContextProxy> gHostContextProxyMap = new WeakHashMap<Activity, HostContextProxy>(5);
-
     private Module runtimeModule;
-    private Resources baseResources;
-    private Resources runtimeResources;
+    private Configuration configuration;
     private WeakReference<Activity> activityRef;
 
-    public HostContextProxy(Activity activity) {
-        super(activity.getBaseContext(), 0);
-        baseResources = activity.getResources();
-        activityRef = new WeakReference<Activity>(activity);
+    private Resources.Theme theme;
+    private Resources baseResources;
+    private Resources runtimeResources;
+    private LayoutInflater layoutInflater;
+
+    private static final WeakHashMap<Activity, HostContextProxy> gHostContextProxyMap = new WeakHashMap<Activity, HostContextProxy>(5);
+
+    public HostContextProxy(Activity activity, int themeId) {
+        super(activity.getBaseContext(), themeId);
+        this.baseResources = activity.getResources();
+        this.configuration = baseResources.getConfiguration();
+        this.activityRef = new WeakReference<Activity>(activity);
         gHostContextProxyMap.put(activity, this);
-        resolveRuntimeModule(Installer.getRuntimeModule(), true);
-    }
-
-    private static volatile boolean callingActivityOnCreate = false;
-    private static final Object callingActivityOnCreateLock = new Object();
-
-    public static void setCallingActivityOnCreate(boolean callingActivityOnCreate) {
-        synchronized (callingActivityOnCreateLock) {
-            HostContextProxy.callingActivityOnCreate = callingActivityOnCreate;
-            if (!callingActivityOnCreate) {
-                callingActivityOnCreateLock.notifyAll();
-            }
-        }
     }
 
     public static void onRuntimeModuleLoaded(final Module runtime) {
-        x.task().start(new AbsTask<Void>() {
-            @Override
-            protected Void doBackground() throws Throwable {
-                synchronized (callingActivityOnCreateLock) {
-                    while (callingActivityOnCreate) {
-                        callingActivityOnCreateLock.wait();
-                    }
-                }
-                return null;
+        try {
+            Application application = x.app();
+            AssetManager oldAssets = application.getAssets();
+            PluginReflectUtil.addAssetPath(oldAssets, runtime.getPluginFile().getAbsolutePath());
+            Context base = application.getBaseContext();
+            Resources runtimeResources = runtime.getContext().getResources();
+            if (runtimeResources instanceof ResourcesProxy) {
+                runtimeResources = ((ResourcesProxy) runtimeResources).cloneForHost();
             }
+            Reflector.with(base).field("mResources").set(runtimeResources);
+        } catch (Throwable ex) {
+            LogUtil.w(ex.getMessage(), ex);
+        }
 
-            @Override
-            protected void onSuccess(Void result) {
-                try {
-                    Application application = x.app();
-                    AssetManager oldAssets = application.getAssets();
-                    PluginReflectUtil.addAssetPath(oldAssets, runtime.getPluginFile().getAbsolutePath());
-                    Context base = application.getBaseContext();
-                    Resources runtimeResources = runtime.getContext().getResources();
-                    if (runtimeResources instanceof ResourcesProxy) {
-                        runtimeResources = ((ResourcesProxy) runtimeResources).cloneForHost();
-                    }
-                    Reflector.with(base).field("mResources").set(runtimeResources);
-                } catch (Throwable ex) {
-                    LogUtil.w(ex.getMessage(), ex);
-                }
-
-                for (HostContextProxy proxy : gHostContextProxyMap.values()) {
-                    if (proxy != null) {
-                        proxy.resolveRuntimeModule(runtime, false);
-                    }
-                }
-            }
-
-            @Override
-            protected void onError(Throwable ex, boolean isCallbackError) {
-            }
-        });
-    }
-
-    private synchronized void resolveRuntimeModule(Module runtime, boolean fromConstructor) {
-        if (runtimeModule != null) return;
-
-        runtimeModule = runtime;
-        if (runtimeModule != null && !fromConstructor) {
-            try {
-                Activity activity = activityRef.get();
-                if (activity != null) {
-                    Resources tempResources = null;
-                    try {
-                        Configuration currentConfig = baseResources.getConfiguration();
-                        Context configurationContext = runtimeModule.getContext().createConfigurationContext(currentConfig);
-                        tempResources = configurationContext.getResources();
-                    } catch (Throwable ex) {
-                        LogUtil.e(ex.getMessage(), ex);
-                        tempResources = runtimeModule.getContext().getResources();
-                    }
-
-                    if (tempResources instanceof ResourcesProxy) {
-                        tempResources = ((ResourcesProxy) tempResources).cloneForHost();
-                    }
-
-                    Reflector ctxReflector = Reflector.on(ContextThemeWrapper.class).bind(activity);
-                    ctxReflector.field("mResources").set(tempResources);
-                    runtimeResources = tempResources;
-
-                    ReflectField mInflaterField = ctxReflector.field("mInflater");
-                    LayoutInflater inflater = mInflaterField.get();
-                    if (inflater != null) {
-                        inflater = inflater.cloneInContext(this);
-                        mInflaterField.set(inflater);
-                    }
-                }
-            } catch (Throwable ex) {
-                LogUtil.e(ex.getMessage(), ex);
+        for (HostContextProxy proxy : gHostContextProxyMap.values()) {
+            if (proxy != null) {
+                proxy.resolveRuntimeModule(runtime);
             }
         }
+    }
+
+    private synchronized void resolveRuntimeModule(Module runtime) {
+        if (runtime == null || runtimeModule != null) return;
+
+        try {
+            runtimeModule = runtime;
+            Activity activity = activityRef.get();
+            if (activity != null) {
+                Resources tempResources = null;
+                Context runtimeContext = runtimeModule.getContext();
+                if (configuration != null) {
+                    Context configurationContext = runtimeContext.createConfigurationContext(configuration);
+                    tempResources = configurationContext.getResources();
+                } else {
+                    tempResources = runtimeContext.getResources();
+                }
+
+                if (tempResources instanceof ResourcesProxy) {
+                    tempResources = ((ResourcesProxy) tempResources).cloneForHost();
+                }
+
+                Reflector ctxReflector = Reflector.on(ContextThemeWrapper.class).bind(activity);
+                ctxReflector.field("mResources").set(tempResources);
+                runtimeResources = tempResources;
+            }
+        } catch (Throwable ex) {
+            LogUtil.e(ex.getMessage(), ex);
+        }
+    }
+
+    @Override
+    public Context createConfigurationContext(Configuration overrideConfiguration) {
+        if (runtimeModule != null) {
+            return runtimeModule.getContext().createConfigurationContext(overrideConfiguration);
+        } else {
+            return super.createConfigurationContext(overrideConfiguration);
+        }
+    }
+
+    @Override
+    public void applyOverrideConfiguration(Configuration overrideConfiguration) {
+        this.configuration = overrideConfiguration;
+    }
+
+    @Override
+    public Object getSystemService(String name) {
+        if (Context.LAYOUT_INFLATER_SERVICE.equals(name)) {
+            if (this.layoutInflater == null) {
+                this.layoutInflater = LayoutInflater.from(getBaseContext()).cloneInContext(this);
+            }
+            return this.layoutInflater;
+        } else {
+            return super.getSystemService(name);
+        }
+    }
+
+    @Override
+    public AssetManager getAssets() {
+        return this.getResources().getAssets();
+    }
+
+    @Override
+    public Resources.Theme getTheme() {
+        if (this.theme == null) {
+            Resources.Theme oldTheme = super.getTheme();
+            this.theme = this.getResources().newTheme();
+            this.theme.setTo(oldTheme);
+        }
+        return this.theme;
     }
 
     @Override

@@ -23,7 +23,6 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.widget.Toast;
 
-import org.xplugin.core.ctx.HostContextProxy;
 import org.xplugin.core.ctx.Module;
 import org.xplugin.core.ctx.Plugin;
 import org.xplugin.core.install.Installer;
@@ -169,23 +168,15 @@ import java.util.Map;
 
     @Override
     public void callActivityOnCreate(Activity activity, Bundle icicle) {
-        try {
-            beforeCallActivityOnCreate(activity);
-            mBase.callActivityOnCreate(activity, icicle);
-        } finally {
-            afterCallActivityOnCreate(activity);
-        }
+        beforeCallActivityOnCreate(activity);
+        mBase.callActivityOnCreate(activity, icicle);
     }
 
     @Override
     @SuppressLint("NewApi")
     public void callActivityOnCreate(Activity activity, Bundle icicle, PersistableBundle persistentState) {
-        try {
-            beforeCallActivityOnCreate(activity);
-            mBase.callActivityOnCreate(activity, icicle, persistentState);
-        } finally {
-            afterCallActivityOnCreate(activity);
-        }
+        beforeCallActivityOnCreate(activity);
+        mBase.callActivityOnCreate(activity, icicle, persistentState);
     }
 
     private void beforeCallActivityOnCreate(Activity activity) {
@@ -207,12 +198,6 @@ import java.util.Map;
         } else { // host activity
             ActivityHelper.initHostActivity(activity);
         }
-
-        HostContextProxy.setCallingActivityOnCreate(true);
-    }
-
-    private void afterCallActivityOnCreate(Activity activity) {
-        HostContextProxy.setCallingActivityOnCreate(false);
     }
 
     @Override

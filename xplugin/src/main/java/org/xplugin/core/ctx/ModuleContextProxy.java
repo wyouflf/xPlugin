@@ -14,12 +14,11 @@ import android.view.LayoutInflater;
 public class ModuleContextProxy extends ContextThemeWrapper {
 
     private final Module module;
+    private Configuration configuration;
 
     private Resources.Theme theme;
-    private Configuration configuration;
+    private Resources resources;
     private LayoutInflater layoutInflater;
-    private final Object themeLock = new Object();
-    private final Object layoutInflaterLock = new Object();
 
     public ModuleContextProxy(Activity activity, Module module) {
         super(activity.getBaseContext(), 0);
@@ -28,28 +27,20 @@ public class ModuleContextProxy extends ContextThemeWrapper {
     }
 
     @Override
-    public Resources.Theme getTheme() {
-        if (this.theme == null) {
-            synchronized (this.themeLock) {
-                if (this.theme == null) {
-                    Resources.Theme oldTheme = getBaseContext().getTheme();
-                    this.theme = this.getResources().newTheme();
-                    this.theme.setTo(oldTheme);
-                }
-            }
-        }
-        return this.theme;
+    public Context createConfigurationContext(Configuration overrideConfiguration) {
+        return module.getContext().createConfigurationContext(overrideConfiguration);
+    }
+
+    @Override
+    public void applyOverrideConfiguration(Configuration overrideConfiguration) {
+        this.configuration = overrideConfiguration;
     }
 
     @Override
     public Object getSystemService(String name) {
         if (Context.LAYOUT_INFLATER_SERVICE.equals(name)) {
             if (this.layoutInflater == null) {
-                synchronized (this.layoutInflaterLock) {
-                    if (this.layoutInflater == null) {
-                        this.layoutInflater = LayoutInflater.from(getBaseContext()).cloneInContext(this);
-                    }
-                }
+                this.layoutInflater = LayoutInflater.from(getBaseContext()).cloneInContext(this);
             }
             return this.layoutInflater;
         } else {
@@ -58,8 +49,13 @@ public class ModuleContextProxy extends ContextThemeWrapper {
     }
 
     @Override
-    public Context createConfigurationContext(Configuration overrideConfiguration) {
-        return module.getContext().createConfigurationContext(overrideConfiguration);
+    public Resources.Theme getTheme() {
+        if (this.theme == null) {
+            Resources.Theme oldTheme = super.getTheme();
+            this.theme = this.getResources().newTheme();
+            this.theme.setTo(oldTheme);
+        }
+        return this.theme;
     }
 
     @Override
@@ -69,16 +65,16 @@ public class ModuleContextProxy extends ContextThemeWrapper {
 
     @Override
     public Resources getResources() {
-        Resources result = null;
-        Context context = module.getContext();
-        if (configuration != null) {
-            Context configurationContext = context.createConfigurationContext(configuration);
-            result = configurationContext.getResources();
-        } else {
-            result = context.getResources();
+        if (resources == null) {
+            Context context = module.getContext();
+            if (configuration != null) {
+                Context configurationContext = context.createConfigurationContext(configuration);
+                resources = configurationContext.getResources();
+            } else {
+                resources = context.getResources();
+            }
         }
-
-        return result;
+        return resources;
     }
 
     @Override

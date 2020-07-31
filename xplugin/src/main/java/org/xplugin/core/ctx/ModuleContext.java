@@ -30,12 +30,12 @@ public final class ModuleContext extends ContextWrapper {
     private final File pluginFile;
     private final ModuleClassLoader classLoader;
 
+    private Resources.Theme theme;
     private ResourcesProxy resources;
-    private AssetManager assetManager;
     private LayoutInflater layoutInflater;
-    private final Object resourcesLock = new Object();
+
+    private AssetManager assetManager;
     private final Object assetManagerLock = new Object();
-    private final Object layoutInflaterLock = new Object();
 
     // for Configuration Context
     private Configuration overrideConfiguration;
@@ -76,16 +76,22 @@ public final class ModuleContext extends ContextWrapper {
     public Object getSystemService(String name) {
         if (Context.LAYOUT_INFLATER_SERVICE.equals(name)) {
             if (this.layoutInflater == null) {
-                synchronized (this.layoutInflaterLock) {
-                    if (this.layoutInflater == null) {
-                        this.layoutInflater = LayoutInflater.from(getBaseContext()).cloneInContext(this);
-                    }
-                }
+                this.layoutInflater = LayoutInflater.from(getBaseContext()).cloneInContext(this);
             }
             return this.layoutInflater;
         } else {
             return super.getSystemService(name);
         }
+    }
+
+    @Override
+    public Resources.Theme getTheme() {
+        if (this.theme == null) {
+            Resources.Theme oldTheme = super.getTheme();
+            this.theme = this.getResources().newTheme();
+            this.theme.setTo(oldTheme);
+        }
+        return this.theme;
     }
 
     @Override
@@ -153,17 +159,13 @@ public final class ModuleContext extends ContextWrapper {
     @Override
     public Resources getResources() {
         if (this.resources == null) {
-            synchronized (this.resourcesLock) {
-                if (this.resources == null) {
-                    // Resources parent = super.getResources(); 不能这样用, 中兴部分机型(P188T51)会陷入死循环.
-                    Resources parent = x.app().getResources();
-                    DisplayMetrics metrics = parent.getDisplayMetrics();
-                    Configuration configuration =
-                            overrideConfiguration == null ? parent.getConfiguration() : overrideConfiguration;
-                    Resources base = new Resources(getAssets(), metrics, configuration);
-                    this.resources = new ResourcesProxy(base, config.getPackageName());
-                }
-            }
+            // Resources parent = super.getResources(); 不能这样用, 中兴部分机型(P188T51)会陷入死循环.
+            Resources parent = x.app().getResources();
+            DisplayMetrics metrics = parent.getDisplayMetrics();
+            Configuration configuration =
+                    overrideConfiguration == null ? parent.getConfiguration() : overrideConfiguration;
+            Resources base = new Resources(getAssets(), metrics, configuration);
+            this.resources = new ResourcesProxy(base, config.getPackageName());
         }
         return this.resources;
     }

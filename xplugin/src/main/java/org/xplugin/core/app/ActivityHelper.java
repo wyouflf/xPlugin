@@ -83,11 +83,18 @@ public final class ActivityHelper {
         Context context = activity.getBaseContext();
         if (!(context instanceof ModuleContextProxy)) {
             try {
+                int themeId = 0;
+                ActivityInfo info = Installer.getHost()
+                        .getConfig().findActivityInfoByClassName(activity.getClass().getName());
+                if (info != null && info.theme != 0) {
+                    themeId = info.theme;
+                }
+
                 // change base context
                 Reflector.on(ContextWrapper.class)
                         .bind(activity)
                         .field("mBase")
-                        .set(new HostContextProxy(activity));
+                        .set(new HostContextProxy(activity, themeId));
             } catch (Throwable ex) {
                 LogUtil.e(ex.getMessage(), ex);
             }
