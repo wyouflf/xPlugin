@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
@@ -19,15 +20,18 @@ import org.xutils.x;
 import java.lang.ref.WeakReference;
 import java.util.WeakHashMap;
 
-public final class HostContextProxy extends ContextProxy {
+public final class HostContextProxy extends ContextThemeWrapper {
 
     private static final WeakHashMap<Activity, HostContextProxy> gHostContextProxyMap = new WeakHashMap<Activity, HostContextProxy>(5);
 
     private Module runtimeModule;
+    private Resources baseResources;
+    private Resources runtimeResources;
     private WeakReference<Activity> activityRef;
 
     public HostContextProxy(Activity activity) {
-        super(activity.getBaseContext(), null);
+        super(activity.getBaseContext(), 0);
+        baseResources = activity.getResources();
         activityRef = new WeakReference<Activity>(activity);
         gHostContextProxyMap.put(activity, this);
         resolveRuntimeModule(Installer.getRuntimeModule(), true);
@@ -86,11 +90,6 @@ public final class HostContextProxy extends ContextProxy {
         });
     }
 
-    @Override
-    public Plugin getPlugin() {
-        return runtimeModule != null ? runtimeModule : Installer.getHost();
-    }
-
     private synchronized void resolveRuntimeModule(Module runtime, boolean fromConstructor) {
         if (runtimeModule != null) return;
 
@@ -99,12 +98,23 @@ public final class HostContextProxy extends ContextProxy {
             try {
                 Activity activity = activityRef.get();
                 if (activity != null) {
-                    Reflector ctxReflector = Reflector.on(ContextThemeWrapper.class).bind(activity);
-                    Resources runtimeResources = runtimeModule.getContext().getResources();
-                    if (runtimeResources instanceof ResourcesProxy) {
-                        runtimeResources = ((ResourcesProxy) runtimeResources).cloneForHost();
+                    Resources tempResources = null;
+                    try {
+                        Configuration currentConfig = baseResources.getConfiguration();
+                        Context configurationContext = runtimeModule.getContext().createConfigurationContext(currentConfig);
+                        tempResources = configurationContext.getResources();
+                    } catch (Throwable ex) {
+                        LogUtil.e(ex.getMessage(), ex);
+                        tempResources = runtimeModule.getContext().getResources();
                     }
-                    ctxReflector.field("mResources").set(runtimeResources);
+
+                    if (tempResources instanceof ResourcesProxy) {
+                        tempResources = ((ResourcesProxy) tempResources).cloneForHost();
+                    }
+
+                    Reflector ctxReflector = Reflector.on(ContextThemeWrapper.class).bind(activity);
+                    ctxReflector.field("mResources").set(tempResources);
+                    runtimeResources = tempResources;
 
                     ReflectField mInflaterField = ctxReflector.field("mInflater");
                     LayoutInflater inflater = mInflaterField.get();
@@ -116,6 +126,15 @@ public final class HostContextProxy extends ContextProxy {
             } catch (Throwable ex) {
                 LogUtil.e(ex.getMessage(), ex);
             }
+        }
+    }
+
+    @Override
+    public Resources getResources() {
+        if (runtimeResources != null) {
+            return runtimeResources;
+        } else {
+            return baseResources;
         }
     }
 

@@ -68,8 +68,8 @@ public abstract class Plugin {
             classLoader = (ClassLoader) obj;
         } else if (obj instanceof ModuleContext) {
             classLoader = ((ModuleContext) obj).getClassLoader();
-        } else if (obj instanceof ContextProxy) {
-            classLoader = ((ContextProxy) obj).getClassLoader();
+        } else if (obj instanceof ModuleContextProxy) {
+            classLoader = ((ModuleContextProxy) obj).getClassLoader();
         } else {
             classLoader = obj.getClass().getClassLoader();
         }

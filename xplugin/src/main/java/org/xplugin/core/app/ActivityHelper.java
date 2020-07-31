@@ -8,9 +8,10 @@ import android.os.Build;
 import android.text.TextUtils;
 import android.view.ContextThemeWrapper;
 
-import org.xplugin.core.ctx.ContextProxy;
 import org.xplugin.core.ctx.Host;
 import org.xplugin.core.ctx.HostContextProxy;
+import org.xplugin.core.ctx.Module;
+import org.xplugin.core.ctx.ModuleContextProxy;
 import org.xplugin.core.ctx.Plugin;
 import org.xplugin.core.install.Config;
 import org.xplugin.core.install.Installer;
@@ -80,7 +81,7 @@ public final class ActivityHelper {
     /*packaged*/
     static void initHostActivity(Activity activity) {
         Context context = activity.getBaseContext();
-        if (!(context instanceof ContextProxy)) {
+        if (!(context instanceof ModuleContextProxy)) {
             try {
                 // change base context
                 Reflector.on(ContextWrapper.class)
@@ -94,39 +95,40 @@ public final class ActivityHelper {
     }
 
     /*packaged*/
-    static void initModuleActivity(Activity activity, Plugin plugin) {
+    static void initModuleActivity(Activity activity, Module module) {
         try {
+            Context newBase = new ModuleContextProxy(activity, module);
             // change base context
             Reflector.on(ContextWrapper.class)
                     .bind(activity)
                     .field("mBase")
-                    .set(new ContextProxy(activity.getBaseContext(), plugin));
+                    .set(newBase);
 
             // change mResources
             Reflector.on(ContextThemeWrapper.class)
                     .bind(activity)
                     .field("mResources")
-                    .set(plugin.getContext().getResources());
+                    .set(newBase.getResources());
 
             // change mTheme
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                activity.setTheme(plugin.getContext().getTheme());
+                activity.setTheme(newBase.getTheme());
             } else {
                 Reflector.on(ContextThemeWrapper.class)
                         .bind(activity)
                         .field("mTheme")
-                        .set(plugin.getContext().getTheme());
+                        .set(newBase.getTheme());
             }
 
             // change mTitle
-            Config config = plugin.getConfig();
+            Config config = module.getConfig();
             Reflector activityReflector = Reflector.on(Activity.class).bind(activity);
             activityReflector.field("mTitle").set(config.getLabel());
 
             // change mActivityInfo
             ActivityInfo info = config.findActivityInfoByClassName(activity.getClass().getName());
             if (info != null) {
-                if (info.theme != 0 && activity.getParent() == null) {
+                if (info.theme != 0) {
                     activity.setTheme(info.theme);
                 }
 

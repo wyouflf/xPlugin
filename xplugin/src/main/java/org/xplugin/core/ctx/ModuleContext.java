@@ -1,13 +1,13 @@
 package org.xplugin.core.ctx;
 
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Build;
 import android.text.TextUtils;
-import android.view.ContextThemeWrapper;
-import android.view.LayoutInflater;
+import android.util.DisplayMetrics;
 
 import org.xplugin.core.install.Config;
 import org.xplugin.core.install.Installer;
@@ -17,29 +17,34 @@ import org.xutils.x;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
-public final class ModuleContext extends ContextThemeWrapper {
+public final class ModuleContext extends ContextWrapper {
 
     private final File pluginFile;
     private final ModuleClassLoader classLoader;
 
-    private Resources.Theme theme;
-    private Resources resources;
+    private ResourcesProxy resources;
     private AssetManager assetManager;
-    private LayoutInflater layoutInflater;
-    private Configuration overrideConfiguration;
-
-    private final Object themeLock = new Object();
     private final Object resourcesLock = new Object();
     private final Object assetManagerLock = new Object();
-    private final Object layoutInflaterLock = new Object();
+
+    // for Configuration Context
+    private Configuration overrideConfiguration;
+    private final HashMap<Configuration, ModuleContext> mConfigurationContextMap = new HashMap<Configuration, ModuleContext>(5);
 
     public ModuleContext(File pluginFile, Config config) {
-        super(x.app(), 0);
+        super(x.app());
         this.pluginFile = pluginFile;
         this.classLoader = new ModuleClassLoader(pluginFile, Objects.requireNonNull(pluginFile.getParentFile()), config);
+    }
+
+    private ModuleContext(File pluginFile, ModuleClassLoader classLoader) {
+        super(x.app());
+        this.pluginFile = pluginFile;
+        this.classLoader = classLoader;
     }
 
     /*package*/ void attachModule(Module module) {
@@ -47,33 +52,16 @@ public final class ModuleContext extends ContextThemeWrapper {
     }
 
     @Override
-    public Object getSystemService(String name) {
-        if (Context.LAYOUT_INFLATER_SERVICE.equals(name)) {
-            if (this.layoutInflater == null) {
-                synchronized (this.layoutInflaterLock) {
-                    if (this.layoutInflater == null) {
-                        this.layoutInflater = LayoutInflater.from(getBaseContext()).cloneInContext(this);
-                    }
-                }
-            }
-            return this.layoutInflater;
-        } else {
-            return super.getSystemService(name);
+    public Context createConfigurationContext(Configuration overrideConfiguration) {
+        if (overrideConfiguration == null) return this;
+        ModuleContext result = mConfigurationContextMap.get(overrideConfiguration);
+        if (result == null) {
+            result = new ModuleContext(pluginFile, classLoader);
+            result.assetManager = assetManager;
+            result.overrideConfiguration = overrideConfiguration;
+            this.mConfigurationContextMap.put(overrideConfiguration, result);
         }
-    }
-
-    @Override
-    public Resources.Theme getTheme() {
-        if (this.theme == null) {
-            synchronized (this.themeLock) {
-                if (this.theme == null) {
-                    Resources.Theme oldTheme = super.getTheme();
-                    this.theme = this.getResources().newTheme();
-                    this.theme.setTo(oldTheme);
-                }
-            }
-        }
-        return this.theme;
+        return result;
     }
 
     @Override
@@ -130,19 +118,15 @@ public final class ModuleContext extends ContextThemeWrapper {
                 if (this.resources == null) {
                     // Resources parent = super.getResources(); 不能这样用, 中兴部分机型(P188T51)会陷入死循环.
                     Resources parent = x.app().getResources();
-                    Configuration configuration = this.overrideConfiguration == null ?
-                            parent.getConfiguration() : this.overrideConfiguration;
-                    Resources res = new Resources(getAssets(), parent.getDisplayMetrics(), configuration);
-                    this.resources = new ResourcesProxy(res, classLoader.getModule().getConfig().getPackageName());
+                    DisplayMetrics metrics = parent.getDisplayMetrics();
+                    Configuration configuration =
+                            overrideConfiguration == null ? parent.getConfiguration() : overrideConfiguration;
+                    Resources base = new Resources(getAssets(), metrics, configuration);
+                    this.resources = new ResourcesProxy(base, classLoader.getModule().getConfig().getPackageName());
                 }
             }
         }
         return this.resources;
-    }
-
-    @Override
-    public void applyOverrideConfiguration(Configuration overrideConfiguration) {
-        this.overrideConfiguration = new Configuration(overrideConfiguration);
     }
 
     public File getPluginFile() {

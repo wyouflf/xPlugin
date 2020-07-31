@@ -203,7 +203,7 @@ import java.util.Map;
 
         Plugin plugin = Plugin.getPlugin(activity);
         if (plugin instanceof Module) { // module activity
-            ActivityHelper.initModuleActivity(activity, plugin);
+            ActivityHelper.initModuleActivity(activity, (Module) plugin);
         } else { // host activity
             ActivityHelper.initHostActivity(activity);
         }
