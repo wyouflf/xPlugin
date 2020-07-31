@@ -1,6 +1,7 @@
 package org.xplugin.core.install;
 
 import android.content.pm.ActivityInfo;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.ProviderInfo;
 import android.content.pm.ServiceInfo;
 import android.graphics.drawable.Drawable;
@@ -26,6 +27,7 @@ public final class Config {
     /*package*/ long version;
     /*package*/ String versionName;
     /*package*/ Drawable icon;
+    /*package*/ ApplicationInfo applicationInfo;
     /*package*/ final Set<String> dependence;
     /*package*/ final Map<String, String> actionMap;       // <action, className>
     /*package*/ final Map<String, ActivityInfo> activityMap;   // <className, info>
@@ -66,6 +68,10 @@ public final class Config {
 
     public Drawable getIcon() {
         return icon;
+    }
+
+    public ApplicationInfo getApplicationInfo() {
+        return new ApplicationInfo(applicationInfo);
     }
 
     public Set<String> getDependence() {

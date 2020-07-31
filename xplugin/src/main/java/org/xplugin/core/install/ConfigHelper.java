@@ -61,6 +61,9 @@ import java.util.Map;
                 int appTheme = 0;
                 if (appInfo != null) {
                     appTheme = appInfo.theme;
+                    config.applicationInfo = appInfo;
+                    config.applicationClassName = appInfo.className;
+
                     if (appInfo.metaData != null) {
                         String depStr = appInfo.metaData.getString(META_DEPENDENCE);
                         if (!TextUtils.isEmpty(depStr)) {
@@ -156,7 +159,7 @@ import java.util.Map;
                     appTheme = appInfo.theme;
                     appLabelRes = appInfo.labelRes;
                     appIcon = appInfo.icon;
-
+                    config.applicationInfo = appInfo;
                     config.applicationClassName = appInfo.className;
 
                     if (appInfo.metaData != null) {

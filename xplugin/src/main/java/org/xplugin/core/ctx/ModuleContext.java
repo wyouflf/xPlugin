@@ -2,6 +2,8 @@ package org.xplugin.core.ctx;
 
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -17,12 +19,13 @@ import org.xutils.x;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Objects;
 
 public final class ModuleContext extends ContextWrapper {
 
+    private final Config config;
     private final File pluginFile;
     private final ModuleClassLoader classLoader;
 
@@ -37,6 +40,7 @@ public final class ModuleContext extends ContextWrapper {
 
     public ModuleContext(File pluginFile, Config config) {
         super(x.app());
+        this.config = config;
         this.pluginFile = pluginFile;
         this.classLoader = new ModuleClassLoader(pluginFile, Objects.requireNonNull(pluginFile.getParentFile()), config);
     }
@@ -45,6 +49,7 @@ public final class ModuleContext extends ContextWrapper {
         super(x.app());
         this.pluginFile = pluginFile;
         this.classLoader = classLoader;
+        this.config = classLoader.getConfig();
     }
 
     /*package*/ void attachModule(Module module) {
@@ -69,41 +74,56 @@ public final class ModuleContext extends ContextWrapper {
         if (this.assetManager == null) {
             synchronized (this.assetManagerLock) {
                 if (this.assetManager == null) {
-                    try {
-                        this.assetManager = AssetManager.class.newInstance();
-                    } catch (Throwable ex) {
-                        throw new RuntimeException("Plugin init failed:", ex);
-                    }
-                    List<String> assetsPathList = new ArrayList<String>(3);
+                    ArrayList<String> splitSourceDirs = new ArrayList<String>();
+                    // for self & runtimeModule
                     String runtimeModulePath = null;
                     Module runtimeModule = Installer.getRuntimeModule();
                     if (runtimeModule != null && !this.pluginFile.equals(runtimeModule.getPluginFile())) {
                         runtimeModulePath = runtimeModule.getPluginFile().getPath();
                     }
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        assetsPathList.add(x.app().getApplicationInfo().sourceDir);
-                        assetsPathList.add(this.pluginFile.getAbsolutePath());
+                        splitSourceDirs.add(this.pluginFile.getAbsolutePath());
                         if (!TextUtils.isEmpty(runtimeModulePath)) {
-                            assetsPathList.add(runtimeModulePath);
+                            splitSourceDirs.add(runtimeModulePath);
                         }
                     } else {
-                        assetsPathList.add(x.app().getApplicationInfo().sourceDir);
                         if (!TextUtils.isEmpty(runtimeModulePath)) {
-                            assetsPathList.add(runtimeModulePath);
+                            splitSourceDirs.add(runtimeModulePath);
                         }
-                        assetsPathList.add(this.pluginFile.getAbsolutePath());
+                        splitSourceDirs.add(this.pluginFile.getAbsolutePath());
                     }
 
+                    // for WebView
                     String webViewResourcesDir = PluginReflectUtil.getWebViewResourcesDir();
                     if (!TextUtils.isEmpty(webViewResourcesDir)) {
-                        assetsPathList.add(webViewResourcesDir);
+                        splitSourceDirs.add(webViewResourcesDir);
                     }
 
-                    for (String path : assetsPathList) {
-                        int cookie = PluginReflectUtil.addAssetPath(this.assetManager, path);
-                        if (cookie == 0) {
-                            LogUtil.e("addAssets Failed:" + path + "#" + cookie + "#" + pluginFile.getAbsolutePath());
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            ApplicationInfo applicationInfo = config.getApplicationInfo();
+                            applicationInfo.sourceDir = x.app().getApplicationInfo().sourceDir;
+                            applicationInfo.publicSourceDir = applicationInfo.sourceDir;
+                            if (applicationInfo.splitSourceDirs != null) {
+                                splitSourceDirs.addAll(Arrays.asList(applicationInfo.splitSourceDirs));
+                            }
+                            applicationInfo.splitSourceDirs = splitSourceDirs.toArray(new String[0]);
+                            applicationInfo.splitPublicSourceDirs = applicationInfo.splitSourceDirs;
+                            PackageManager pm = x.app().getPackageManager();
+                            Resources appResources = pm.getResourcesForApplication(applicationInfo);
+                            this.assetManager = appResources.getAssets();
+                        } else {
+                            this.assetManager = AssetManager.class.newInstance();
+                            PluginReflectUtil.addAssetPath(this.assetManager, x.app().getApplicationInfo().sourceDir);
+                            for (String path : splitSourceDirs) {
+                                int cookie = PluginReflectUtil.addAssetPath(this.assetManager, path);
+                                if (cookie == 0) {
+                                    LogUtil.e("addAssets Failed:" + path + "#" + cookie + "#" + pluginFile.getAbsolutePath());
+                                }
+                            }
                         }
+                    } catch (Throwable ex) {
+                        LogUtil.e(ex.getMessage(), ex);
                     }
                 }
             }
@@ -122,7 +142,7 @@ public final class ModuleContext extends ContextWrapper {
                     Configuration configuration =
                             overrideConfiguration == null ? parent.getConfiguration() : overrideConfiguration;
                     Resources base = new Resources(getAssets(), metrics, configuration);
-                    this.resources = new ResourcesProxy(base, classLoader.getModule().getConfig().getPackageName());
+                    this.resources = new ResourcesProxy(base, config.getPackageName());
                 }
             }
         }

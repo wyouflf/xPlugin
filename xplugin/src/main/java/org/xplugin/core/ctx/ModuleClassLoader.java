@@ -39,6 +39,10 @@ public final class ModuleClassLoader extends DexClassLoader {
         }
     }
 
+    public Config getConfig() {
+        return config;
+    }
+
     public Module getModule() {
         return module;
     }
