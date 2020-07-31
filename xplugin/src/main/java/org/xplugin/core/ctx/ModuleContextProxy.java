@@ -58,6 +58,11 @@ public class ModuleContextProxy extends ContextThemeWrapper {
     }
 
     @Override
+    public Context createConfigurationContext(Configuration overrideConfiguration) {
+        return module.getContext().createConfigurationContext(overrideConfiguration);
+    }
+
+    @Override
     public AssetManager getAssets() {
         return getResources().getAssets();
     }

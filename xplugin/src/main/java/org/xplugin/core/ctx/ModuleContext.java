@@ -10,6 +10,7 @@ import android.content.res.Resources;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
+import android.view.LayoutInflater;
 
 import org.xplugin.core.install.Config;
 import org.xplugin.core.install.Installer;
@@ -31,8 +32,10 @@ public final class ModuleContext extends ContextWrapper {
 
     private ResourcesProxy resources;
     private AssetManager assetManager;
+    private LayoutInflater layoutInflater;
     private final Object resourcesLock = new Object();
     private final Object assetManagerLock = new Object();
+    private final Object layoutInflaterLock = new Object();
 
     // for Configuration Context
     private Configuration overrideConfiguration;
@@ -67,6 +70,22 @@ public final class ModuleContext extends ContextWrapper {
             this.mConfigurationContextMap.put(overrideConfiguration, result);
         }
         return result;
+    }
+
+    @Override
+    public Object getSystemService(String name) {
+        if (Context.LAYOUT_INFLATER_SERVICE.equals(name)) {
+            if (this.layoutInflater == null) {
+                synchronized (this.layoutInflaterLock) {
+                    if (this.layoutInflater == null) {
+                        this.layoutInflater = LayoutInflater.from(getBaseContext()).cloneInContext(this);
+                    }
+                }
+            }
+            return this.layoutInflater;
+        } else {
+            return super.getSystemService(name);
+        }
     }
 
     @Override
