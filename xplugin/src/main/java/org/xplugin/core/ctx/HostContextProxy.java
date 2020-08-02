@@ -8,6 +8,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
+import android.view.Window;
 
 import org.xplugin.core.install.Installer;
 import org.xplugin.core.util.PluginReflectUtil;
@@ -16,6 +17,9 @@ import org.xutils.common.util.LogUtil;
 import org.xutils.x;
 
 import java.lang.ref.WeakReference;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.WeakHashMap;
 
 public final class HostContextProxy extends ContextThemeWrapper {
@@ -29,17 +33,37 @@ public final class HostContextProxy extends ContextThemeWrapper {
     private Resources runtimeResources;
     private LayoutInflater layoutInflater;
 
+    private volatile boolean isContentCreated = false;
+    private final Object CONTENT_CREATE_LOCK = new Object();
+
     private static final WeakHashMap<Activity, HostContextProxy> gHostContextProxyMap = new WeakHashMap<Activity, HostContextProxy>(5);
 
-    public HostContextProxy(Activity activity, int themeId) {
+    public HostContextProxy(Activity activity, int themeId, boolean isContentCreated) {
         super(activity.getBaseContext(), themeId);
         this.baseResources = activity.getResources();
         this.configuration = baseResources.getConfiguration();
         this.activityRef = new WeakReference<Activity>(activity);
-        gHostContextProxyMap.put(activity, this);
+        this.isContentCreated = isContentCreated;
+        this.runtimeModule = Installer.getRuntimeModule();
+        if (runtimeModule != null) {
+            onRuntimeModuleLoaded(runtimeModule, false);
+        } else {
+            gHostContextProxyMap.put(activity, this);
+            Window window = activity.getWindow();
+            if (window != null && !isContentCreated) {
+                Window.Callback callback = window.getCallback();
+                if (callback == null) {
+                    callback = activity;
+                }
+                Object callbackWrapper = Proxy.newProxyInstance(activity.getClass().getClassLoader(),
+                        new Class[]{Window.Callback.class},
+                        new WindowCallbackWrapper(callback));
+                window.setCallback((Window.Callback) callbackWrapper);
+            }
+        }
     }
 
-    public static void onRuntimeModuleLoaded(final Module runtime) {
+    public static void onRuntimeModuleLoaded(final Module runtime, boolean fromInitCallback) {
         try {
             Application application = x.app();
             AssetManager oldAssets = application.getAssets();
@@ -56,14 +80,22 @@ public final class HostContextProxy extends ContextThemeWrapper {
 
         for (HostContextProxy proxy : gHostContextProxyMap.values()) {
             if (proxy != null) {
-                proxy.resolveRuntimeModule(runtime);
+                proxy.resolveRuntimeModule(runtime, fromInitCallback);
             }
         }
     }
 
-    private synchronized void resolveRuntimeModule(Module runtime) {
-        if (runtime == null || runtimeModule != null) return;
-
+    private void resolveRuntimeModule(Module runtime, boolean fromInitCallback) {
+        if (fromInitCallback) {
+            synchronized (CONTENT_CREATE_LOCK) {
+                if (!isContentCreated) {
+                    try {
+                        CONTENT_CREATE_LOCK.wait(1000);
+                    } catch (Throwable ignored) {
+                    }
+                }
+            }
+        }
         try {
             runtimeModule = runtime;
             Activity activity = activityRef.get();
@@ -143,5 +175,24 @@ public final class HostContextProxy extends ContextThemeWrapper {
     @Override
     public ClassLoader getClassLoader() {
         return Installer.getHost().getContext().getClassLoader();
+    }
+
+    private class WindowCallbackWrapper implements InvocationHandler {
+        final Window.Callback mWrapped;
+
+        public WindowCallbackWrapper(Window.Callback wrapped) {
+            mWrapped = wrapped;
+        }
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            if ("onContentChanged".equals(method.getName())) {
+                synchronized (CONTENT_CREATE_LOCK) {
+                    isContentCreated = true;
+                    CONTENT_CREATE_LOCK.notify();
+                }
+            }
+            return method.invoke(mWrapped, args);
+        }
     }
 }

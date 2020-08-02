@@ -94,7 +94,7 @@ public final class ActivityHelper {
                 Reflector.on(ContextWrapper.class)
                         .bind(activity)
                         .field("mBase")
-                        .set(new HostContextProxy(activity, themeId));
+                        .set(new HostContextProxy(activity, themeId, false));
             } catch (Throwable ex) {
                 LogUtil.e(ex.getMessage(), ex);
             }

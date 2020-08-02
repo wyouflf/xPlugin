@@ -499,7 +499,7 @@ public final class Installer {
                     result = new Module(new ModuleContext(moduleFile, config), config);
                     result.init();
                     if (packageName.equals(PluginRuntime.getRuntimeListener().getRuntimePkg())) {
-                        HostContextProxy.onRuntimeModuleLoaded(result);
+                        HostContextProxy.onRuntimeModuleLoaded(result, true);
                     }
                     loadedModules.put(packageName, result);
                     newLoadedPlugins.put(packageName, result);
