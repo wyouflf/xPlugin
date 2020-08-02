@@ -1,8 +1,8 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 29
-    buildToolsVersion "29.0.3"
+    compileSdkVersion 30
+    buildToolsVersion "30.0.1"
 
     aaptOptions {
         additionalParameters '--package-id', '0x80', '-I', "${rootDir}/runtime/main_rt_module1.apk", '--stable-ids', "${rootDir}/runtime/org.xplugin.demo.module1.id.txt"
@@ -11,7 +11,7 @@ android {
     defaultConfig {
         applicationId "org.xplugin.demo.module1"
         minSdkVersion 19
-        targetSdkVersion 29
+        targetSdkVersion 30
         versionCode 1
         versionName "1.0"
 
