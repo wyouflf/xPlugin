@@ -12,6 +12,7 @@ import android.view.Window;
 
 import org.xplugin.core.install.Installer;
 import org.xplugin.core.util.PluginReflectUtil;
+import org.xplugin.core.util.ReflectField;
 import org.xplugin.core.util.Reflector;
 import org.xutils.common.util.LogUtil;
 import org.xutils.x;
@@ -48,7 +49,6 @@ public final class HostContextProxy extends ContextThemeWrapper {
         if (runtimeModule != null) {
             onRuntimeModuleLoaded(runtimeModule, false);
         } else {
-            gHostContextProxyMap.put(activity, this);
             Window window = activity.getWindow();
             if (window != null && !isContentCreated) {
                 Window.Callback callback = window.getCallback();
@@ -59,6 +59,9 @@ public final class HostContextProxy extends ContextThemeWrapper {
                         new Class[]{Window.Callback.class},
                         new WindowCallbackWrapper(callback));
                 window.setCallback((Window.Callback) callbackWrapper);
+            }
+            synchronized (gHostContextProxyMap) {
+                gHostContextProxyMap.put(activity, this);
             }
         }
     }
@@ -78,9 +81,11 @@ public final class HostContextProxy extends ContextThemeWrapper {
             LogUtil.w(ex.getMessage(), ex);
         }
 
-        for (HostContextProxy proxy : gHostContextProxyMap.values()) {
-            if (proxy != null) {
-                proxy.resolveRuntimeModule(runtime, fromInitCallback);
+        synchronized (gHostContextProxyMap) {
+            for (HostContextProxy proxy : gHostContextProxyMap.values()) {
+                if (proxy != null) {
+                    proxy.resolveRuntimeModule(runtime, fromInitCallback);
+                }
             }
         }
     }
@@ -113,9 +118,25 @@ public final class HostContextProxy extends ContextThemeWrapper {
                     tempResources = ((ResourcesProxy) tempResources).cloneForHost();
                 }
 
-                Reflector ctxReflector = Reflector.on(ContextThemeWrapper.class).bind(activity);
+                final Reflector ctxReflector = Reflector.on(ContextThemeWrapper.class).bind(activity);
                 ctxReflector.field("mResources").set(tempResources);
                 runtimeResources = tempResources;
+
+                x.task().autoPost(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            ReflectField mInflaterField = ctxReflector.field("mInflater");
+                            LayoutInflater inflater = mInflaterField.get();
+                            if (inflater != null) {
+                                inflater = inflater.cloneInContext(HostContextProxy.this);
+                                mInflaterField.set(inflater);
+                            }
+                        } catch (Throwable ex) {
+                            LogUtil.e(ex.getMessage(), ex);
+                        }
+                    }
+                });
             }
         } catch (Throwable ex) {
             LogUtil.e(ex.getMessage(), ex);
