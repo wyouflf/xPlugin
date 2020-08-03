@@ -45,22 +45,23 @@ public final class HostContextProxy extends ContextThemeWrapper {
         this.configuration = baseResources.getConfiguration();
         this.activityRef = new WeakReference<Activity>(activity);
         this.isContentCreated = isContentCreated;
-        this.runtimeModule = Installer.getRuntimeModule();
-        if (runtimeModule != null) {
-            onRuntimeModuleLoaded(runtimeModule, false);
-        } else {
-            Window window = activity.getWindow();
-            if (window != null && !isContentCreated) {
-                Window.Callback callback = window.getCallback();
-                if (callback == null) {
-                    callback = activity;
+        synchronized (gHostContextProxyMap) {
+            Module runtime = Installer.getRuntimeModule();
+            if (runtime != null) {
+                onRuntimeModuleLoaded(runtime, false);
+            } else {
+                Window window = activity.getWindow();
+                if (window != null && !isContentCreated) {
+                    Window.Callback callback = window.getCallback();
+                    if (callback == null) {
+                        callback = activity;
+                    }
+                    Object callbackWrapper = Proxy.newProxyInstance(activity.getClass().getClassLoader(),
+                            new Class[]{Window.Callback.class},
+                            new WindowCallbackWrapper(callback));
+                    window.setCallback((Window.Callback) callbackWrapper);
                 }
-                Object callbackWrapper = Proxy.newProxyInstance(activity.getClass().getClassLoader(),
-                        new Class[]{Window.Callback.class},
-                        new WindowCallbackWrapper(callback));
-                window.setCallback((Window.Callback) callbackWrapper);
-            }
-            synchronized (gHostContextProxyMap) {
+
                 gHostContextProxyMap.put(activity, this);
             }
         }
@@ -90,7 +91,9 @@ public final class HostContextProxy extends ContextThemeWrapper {
         }
     }
 
-    private void resolveRuntimeModule(Module runtime, boolean fromInitCallback) {
+    private synchronized void resolveRuntimeModule(Module runtime, boolean fromInitCallback) {
+        if (this.runtimeModule != null) return;
+
         if (fromInitCallback) {
             synchronized (CONTENT_CREATE_LOCK) {
                 if (!isContentCreated) {
