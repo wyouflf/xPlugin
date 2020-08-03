@@ -1,6 +1,8 @@
 package org.xplugin.core.ctx;
 
 
+import android.os.Build;
+
 import org.xplugin.core.app.IntentHelper;
 import org.xplugin.core.install.Installer;
 import org.xplugin.core.util.PluginReflectUtil;
@@ -132,7 +134,10 @@ import java.util.Set;
             }
         }
 
-        if (result == null && !className.startsWith("android.") && !className.startsWith("com.android.")) {
+        if (result == null && !className.startsWith("android.")) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P && className.startsWith("androidx.")) {
+                return null;
+            }
             Set<String> installedModules = Installer.getInstalledModules();
             if (!installedModules.isEmpty()) {
                 for (String pkg : installedModules) {
