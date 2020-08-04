@@ -53,7 +53,7 @@ android {
                 appIds.add(variant.applicationId)
                 variant.packageApplicationProvider.get().outputDirectory = new File("${rootDir}/runtime")
                 outputFileName = "${project.name}_${variant.flavorName}.apk"
-            } else if (variant.flavorName == "plugin") {
+            } else if (variant.flavorName == "plugin" && variant.buildType.name == "release") {
                 outputFileName = "${applicationId}.png"
                 outputPluginPath = output.outputFile
             }

@@ -43,8 +43,10 @@ android {
     String outputPluginPath = null
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            outputFileName = "${applicationId}.png"
-            outputPluginPath = output.outputFile
+            if (variant.buildType.name == "release") {
+                outputFileName = "${applicationId}.png"
+                outputPluginPath = output.outputFile
+            }
         }
     }
 
