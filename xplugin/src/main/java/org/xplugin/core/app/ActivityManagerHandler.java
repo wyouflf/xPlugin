@@ -4,11 +4,13 @@ import android.app.Activity;
 import android.app.Service;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ActivityInfo;
 import android.os.IBinder;
 import android.util.Log;
 
 import org.xplugin.core.ctx.Plugin;
 import org.xplugin.core.util.Reflector;
+import org.xutils.x;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -19,6 +21,8 @@ import java.lang.reflect.Method;
 
     public ActivityManagerHandler(Object base) {
         this.mBase = base;
+        // monitor activities
+        x.app().registerActivityLifecycleCallbacks(new ActivityLifecycleMonitor());
     }
 
     @Override
@@ -29,18 +33,20 @@ import java.lang.reflect.Method;
                 case "overridePendingTransition":
                     // overridePendingTransition 是跨进程执行的, 必须试用宿主中的资源.
                     /*void overridePendingTransition(in IBinder token, in String packageName, int enterAnim, int exitAnim);*/
-                    Activity activity = null;
-                    try {
-                        Reflector activityThreadReflector = Reflector.on("android.app.ActivityThread");
-                        Object activityThreadObj = activityThreadReflector.method("currentActivityThread").call();
-                        activityThreadReflector.bind(activityThreadObj);
-                        activity = activityThreadReflector.method("getActivity", IBinder.class).call(args[0]);
-                    } catch (Throwable ignored) {
-                    }
-
+                    Activity activity = getActivityByToken(args[0]);
                     args[2] = ActivityHelper.replaceOverridePendingTransitionAnimId(activity, (int) args[2]);
                     args[3] = ActivityHelper.replaceOverridePendingTransitionAnimId(activity, (int) args[3]);
                     return method.invoke(mBase, args);
+                case "finishActivityAffinity": {
+                    /*boolean finishActivityAffinity(in IBinder token);*/
+                    Activity caller = getActivityByToken(args[0]);
+                    Plugin plugin = Plugin.getPlugin(caller);
+                    ActivityInfo info = plugin.getConfig().findActivityInfoByClassName(caller.getClass().getName());
+                    if (info != null && ActivityLifecycleMonitor.finishActivityAffinity(info.taskAffinity)) {
+                        return true;
+                    }
+                    break;
+                }
                 case "startService": {
                     /*ComponentName startService(in IApplicationThread caller, in Intent service,
                     in String resolvedType, boolean requireForeground, in String callingPackage, int userId);*/
@@ -108,5 +114,17 @@ import java.lang.reflect.Method;
         }
 
         return method.invoke(mBase, args);
+    }
+
+    private static Activity getActivityByToken(Object arg) {
+        Activity activity = null;
+        try {
+            Reflector activityThreadReflector = Reflector.on("android.app.ActivityThread");
+            Object activityThreadObj = activityThreadReflector.method("currentActivityThread").call();
+            activityThreadReflector.bind(activityThreadObj);
+            activity = activityThreadReflector.method("getActivity", IBinder.class).call(arg);
+        } catch (Throwable ignored) {
+        }
+        return activity;
     }
 }
