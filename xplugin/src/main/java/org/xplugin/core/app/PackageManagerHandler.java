@@ -9,12 +9,12 @@ import android.content.pm.ProviderInfo;
 import android.content.pm.ResolveInfo;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 
 import org.xplugin.core.ctx.Module;
 import org.xplugin.core.ctx.Plugin;
 import org.xplugin.core.install.Config;
 import org.xplugin.core.install.Installer;
+import org.xutils.common.util.LogUtil;
 import org.xutils.x;
 
 import java.lang.reflect.InvocationHandler;
@@ -106,7 +106,7 @@ import java.util.Map;
                 }
             }
         } catch (Throwable ex) {
-            Log.e(mBase.getClass().getSimpleName(), methodName + ":" + ex.getMessage(), ex);
+            LogUtil.e(methodName + ":" + ex.getMessage(), ex);
         }
 
         return method.invoke(mBase, args);

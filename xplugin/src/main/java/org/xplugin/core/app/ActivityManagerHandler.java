@@ -6,10 +6,10 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
 import android.os.IBinder;
-import android.util.Log;
 
 import org.xplugin.core.ctx.Plugin;
 import org.xplugin.core.util.Reflector;
+import org.xutils.common.util.LogUtil;
 import org.xutils.x;
 
 import java.lang.reflect.InvocationHandler;
@@ -110,7 +110,7 @@ import java.lang.reflect.Method;
                 }
             }
         } catch (Throwable ex) {
-            Log.e(ActivityManagerHandler.class.getSimpleName(), methodName + ":" + ex.getMessage(), ex);
+            LogUtil.e(methodName + ":" + ex.getMessage(), ex);
         }
 
         return method.invoke(mBase, args);
