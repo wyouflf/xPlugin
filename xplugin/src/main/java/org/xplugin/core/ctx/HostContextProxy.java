@@ -48,7 +48,7 @@ public final class HostContextProxy extends ContextThemeWrapper {
         synchronized (gHostContextProxyMap) {
             Module runtime = Installer.getRuntimeModule();
             if (runtime != null) {
-                onRuntimeModuleLoaded(runtime, false);
+                initRuntimeModuleRes(runtime, false);
             } else {
                 Window window = activity.getWindow();
                 if (window != null && !isContentCreated) {
@@ -67,7 +67,10 @@ public final class HostContextProxy extends ContextThemeWrapper {
         }
     }
 
-    public static void onRuntimeModuleLoaded(final Module runtime, boolean fromInitCallback) {
+    /**
+     * call by {@link Installer#loadInstalledModule} or {@link HostContextProxy#HostContextProxy(Activity, int, boolean)}
+     */
+    public static void initRuntimeModuleRes(final Module runtime, boolean fromInitCallback) {
         try {
             Application application = x.app();
             AssetManager oldAssets = application.getAssets();

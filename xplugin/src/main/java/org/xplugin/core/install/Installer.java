@@ -497,11 +497,11 @@ public final class Installer {
                 Config config = ConfigHelper.getModuleConfig(moduleFile, true);
                 if (config != null) {
                     result = new Module(new ModuleContext(moduleFile, config), config);
-                    result.init();
                     if (packageName.equals(PluginRuntime.getRuntimeListener().getRuntimePkg())) {
                         runtimeModule = result;
-                        HostContextProxy.onRuntimeModuleLoaded(result, true);
+                        HostContextProxy.initRuntimeModuleRes(result, true);
                     }
+                    result.init();
                     loadedModules.put(packageName, result);
                     newLoadedPlugins.put(packageName, result);
                     result.onLoaded();
