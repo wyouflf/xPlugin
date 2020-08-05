@@ -13,11 +13,11 @@ public class ActivityInfoLoader {
     public final static String PAGE_ACTION_KEY = "pageAction";
     public final static String PAGE_CLASS_KEY = "pageClass";
 
-    private final static HashMap<String, Class<?>> targetActivityClassCache = new HashMap<String, Class<?>>();
+    private final static HashMap<String, Class<?>> TARGET_ACTIVITY_CLASS_CACHE = new HashMap<String, Class<?>>();
 
     public static Class<?> getTargetClassSync(String targetAction, String targetPackage) throws Throwable {
         String key = targetAction + "#" + targetPackage;
-        Class<?> targetClass = targetActivityClassCache.get(key);
+        Class<?> targetClass = TARGET_ACTIVITY_CLASS_CACHE.get(key);
         if (targetClass != null) return targetClass;
 
         PluginMsg pluginMsg = new PluginMsg(PAGE_INFO_CMD);
@@ -27,7 +27,7 @@ public class ActivityInfoLoader {
         targetClass = (Class<?>) result.getOutParam(PAGE_CLASS_KEY);
 
         if (targetClass != null) {
-            targetActivityClassCache.put(key, targetClass);
+            TARGET_ACTIVITY_CLASS_CACHE.put(key, targetClass);
         } else {
             throw new PageNotFoundException(targetAction);
         }

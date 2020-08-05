@@ -32,20 +32,20 @@ public final class ActivityHelper {
      * key: module anim id
      * value: host anim id
      */
-    private final static HashMap<Integer, Integer> overridePendingTransition_AnimId = new HashMap<Integer, Integer>();
+    private final static HashMap<Integer, Integer> OVERRIDE_PENDING_TRANSITION_ANIM_ID = new HashMap<Integer, Integer>();
 
     public static void registerOverridePendingTransitionAnimId(int moduleAimId, String hostAnimResName) {
         if (moduleAimId == 0 || TextUtils.isEmpty(hostAnimResName)) return;
 
         int hostAnimId = x.app().getResources().getIdentifier(hostAnimResName, "anim", x.app().getPackageName());
-        overridePendingTransition_AnimId.put(moduleAimId, hostAnimId);
+        OVERRIDE_PENDING_TRANSITION_ANIM_ID.put(moduleAimId, hostAnimId);
     }
 
     public static int replaceOverridePendingTransitionAnimId(Activity activity, int moduleAimId) {
         if (moduleAimId == 0) return 0;
 
         try {
-            Integer hostAnimIdObj = overridePendingTransition_AnimId.get(moduleAimId);
+            Integer hostAnimIdObj = OVERRIDE_PENDING_TRANSITION_ANIM_ID.get(moduleAimId);
             int hostAnimId = hostAnimIdObj == null ? 0 : hostAnimIdObj;
             int pkgResId = moduleAimId >>> 24;
             if (hostAnimId != 0) {
@@ -65,7 +65,7 @@ public final class ActivityHelper {
                     hostAnimId = x.app().getResources().getIdentifier(name, "anim", x.app().getPackageName());
                     pkgResId = hostAnimId >>> 24;
                     if (hostAnimId != 0 && (pkgResId < 0x70 || pkgResId == 0x7F)) {
-                        overridePendingTransition_AnimId.put(moduleAimId, hostAnimId);
+                        OVERRIDE_PENDING_TRANSITION_ANIM_ID.put(moduleAimId, hostAnimId);
                         return hostAnimId;
                     }
                 }

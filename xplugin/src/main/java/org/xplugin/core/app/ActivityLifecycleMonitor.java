@@ -20,10 +20,10 @@ import java.util.Map;
 public class ActivityLifecycleMonitor implements Application.ActivityLifecycleCallbacks {
 
     private static ReflectMethod getActivityToken = null;
-    private final static LinkedHashMap<Object, WeakReference<Activity>> ACTIVITYS;
+    private final static LinkedHashMap<Object, WeakReference<Activity>> ACTIVITIES;
 
     static {
-        ACTIVITYS = new LinkedHashMap<Object, WeakReference<Activity>>();
+        ACTIVITIES = new LinkedHashMap<Object, WeakReference<Activity>>();
         try {
             getActivityToken = Reflector.on(Activity.class).method("getActivityToken");
         } catch (Throwable ex) {
@@ -36,10 +36,10 @@ public class ActivityLifecycleMonitor implements Application.ActivityLifecycleCa
 
     public static boolean finishActivityAffinity(String affinity) {
         if (getActivityToken != null) {
-            synchronized (ACTIVITYS) {
+            synchronized (ACTIVITIES) {
                 try {
                     ListIterator<Map.Entry<Object, WeakReference<Activity>>> iterator
-                            = new ArrayList<Map.Entry<Object, WeakReference<Activity>>>(ACTIVITYS.entrySet()).listIterator(ACTIVITYS.size());
+                            = new ArrayList<Map.Entry<Object, WeakReference<Activity>>>(ACTIVITIES.entrySet()).listIterator(ACTIVITIES.size());
                     while (iterator.hasPrevious()) {
                         Map.Entry<Object, WeakReference<Activity>> entry = iterator.previous();
                         WeakReference<Activity> value = entry.getValue();
@@ -79,9 +79,9 @@ public class ActivityLifecycleMonitor implements Application.ActivityLifecycleCa
     @Override
     public void onActivityCreated(Activity activity, Bundle bundle) {
         if (getActivityToken != null) {
-            synchronized (ACTIVITYS) {
+            synchronized (ACTIVITIES) {
                 try {
-                    ACTIVITYS.put(getActivityToken.callByCaller(activity), new WeakReference<Activity>(activity));
+                    ACTIVITIES.put(getActivityToken.callByCaller(activity), new WeakReference<Activity>(activity));
                 } catch (Throwable ex) {
                     LogUtil.e(ex.getMessage(), ex);
                 }
@@ -92,9 +92,9 @@ public class ActivityLifecycleMonitor implements Application.ActivityLifecycleCa
     @Override
     public void onActivityDestroyed(Activity activity) {
         if (getActivityToken != null) {
-            synchronized (ACTIVITYS) {
+            synchronized (ACTIVITIES) {
                 try {
-                    ACTIVITYS.remove(getActivityToken.callByCaller(activity));
+                    ACTIVITIES.remove(getActivityToken.callByCaller(activity));
                 } catch (Throwable ex) {
                     LogUtil.e(ex.getMessage(), ex);
                 }

@@ -27,7 +27,7 @@ public class ContentProviderProxy extends ContentProvider {
     /**
      * key: authority
      */
-    private static final HashMap<String, ContentProvider> sContentProviderMap = new HashMap<String, ContentProvider>(5);
+    private static final HashMap<String, ContentProvider> CONTENT_PROVIDER_MAP = new HashMap<String, ContentProvider>(5);
 
     public ContentProviderProxy() {
     }
@@ -185,7 +185,7 @@ public class ContentProviderProxy extends ContentProvider {
     }
 
     public static ContentProvider getRealContentProvider(String authority) {
-        ContentProvider contentProvider = sContentProviderMap.get(authority);
+        ContentProvider contentProvider = CONTENT_PROVIDER_MAP.get(authority);
         if (contentProvider != null) return contentProvider;
 
         try {
@@ -200,7 +200,7 @@ public class ContentProviderProxy extends ContentProvider {
                 }
                 contentProvider.attachInfo(Plugin.getPlugin(contentProvider).getContext(), info);
                 contentProvider.onCreate();
-                sContentProviderMap.put(authority, contentProvider);
+                CONTENT_PROVIDER_MAP.put(authority, contentProvider);
             }
         } catch (Throwable ex) {
             LogUtil.e(ex.getMessage(), ex);
