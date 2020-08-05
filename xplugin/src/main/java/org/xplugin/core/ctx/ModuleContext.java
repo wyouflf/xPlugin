@@ -99,7 +99,7 @@ public final class ModuleContext extends ContextWrapper {
         if (this.assetManager == null) {
             synchronized (this.assetManagerLock) {
                 if (this.assetManager == null) {
-                    ArrayList<String> splitSourceDirs = new ArrayList<String>();
+                    ArrayList<String> splitSourceList = new ArrayList<String>();
                     // for self & runtimeModule
                     String runtimeModulePath = null;
                     Module runtimeModule = Installer.getRuntimeModule();
@@ -107,22 +107,18 @@ public final class ModuleContext extends ContextWrapper {
                         runtimeModulePath = runtimeModule.getPluginFile().getPath();
                     }
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        splitSourceDirs.add(this.pluginFile.getAbsolutePath());
+                        splitSourceList.add(this.pluginFile.getAbsolutePath());
                         if (!TextUtils.isEmpty(runtimeModulePath)) {
-                            splitSourceDirs.add(runtimeModulePath);
+                            splitSourceList.add(runtimeModulePath);
                         }
                     } else {
                         if (!TextUtils.isEmpty(runtimeModulePath)) {
-                            splitSourceDirs.add(runtimeModulePath);
+                            splitSourceList.add(runtimeModulePath);
                         }
-                        splitSourceDirs.add(this.pluginFile.getAbsolutePath());
+                        splitSourceList.add(this.pluginFile.getAbsolutePath());
                     }
 
-                    // for WebView
                     String webViewResourcesDir = PluginReflectUtil.getWebViewResourcesDir();
-                    if (!TextUtils.isEmpty(webViewResourcesDir)) {
-                        splitSourceDirs.add(webViewResourcesDir);
-                    }
 
                     try {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -130,17 +126,28 @@ public final class ModuleContext extends ContextWrapper {
                             applicationInfo.sourceDir = x.app().getApplicationInfo().sourceDir;
                             applicationInfo.publicSourceDir = applicationInfo.sourceDir;
                             if (applicationInfo.splitSourceDirs != null) {
-                                splitSourceDirs.addAll(Arrays.asList(applicationInfo.splitSourceDirs));
+                                splitSourceList.addAll(Arrays.asList(applicationInfo.splitSourceDirs));
                             }
-                            applicationInfo.splitSourceDirs = splitSourceDirs.toArray(new String[0]);
+                            applicationInfo.splitSourceDirs = splitSourceList.toArray(new String[0]);
                             applicationInfo.splitPublicSourceDirs = applicationInfo.splitSourceDirs;
+                            if (!TextUtils.isEmpty(webViewResourcesDir)) {
+                                ArrayList<String> sharedLibList = new ArrayList<String>();
+                                if (applicationInfo.sharedLibraryFiles != null) {
+                                    sharedLibList.addAll(Arrays.asList(applicationInfo.sharedLibraryFiles));
+                                }
+                                sharedLibList.add(webViewResourcesDir);
+                                applicationInfo.sharedLibraryFiles = sharedLibList.toArray(new String[0]);
+                            }
                             PackageManager pm = x.app().getPackageManager();
                             Resources appResources = pm.getResourcesForApplication(applicationInfo);
                             this.assetManager = appResources.getAssets();
                         } else {
                             this.assetManager = AssetManager.class.newInstance();
                             PluginReflectUtil.addAssetPath(this.assetManager, x.app().getApplicationInfo().sourceDir);
-                            for (String path : splitSourceDirs) {
+                            if (!TextUtils.isEmpty(webViewResourcesDir)) {
+                                splitSourceList.add(webViewResourcesDir);
+                            }
+                            for (String path : splitSourceList) {
                                 int cookie = PluginReflectUtil.addAssetPath(this.assetManager, path);
                                 if (cookie == 0) {
                                     LogUtil.e("addAssets Failed:" + path + "#" + cookie + "#" + pluginFile.getAbsolutePath());
