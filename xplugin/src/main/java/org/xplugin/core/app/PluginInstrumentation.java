@@ -515,6 +515,12 @@ import java.util.Map;
     }
 
     @Override
+    @SuppressLint("NewApi")
+    public void callActivityOnPictureInPictureRequested(Activity activity) {
+        mBase.callActivityOnPictureInPictureRequested(activity);
+    }
+
+    @Override
     public void startAllocCounting() {
         mBase.startAllocCounting();
     }
