@@ -38,10 +38,10 @@
 
 // 宿主中
 implementation 'org.xutils:xutils:3.9.0'
-implementation 'org.xplugin:xplugin:1.3.8'
+implementation 'org.xplugin:xplugin:1.3.9'
 // 插件中
 compileOnly 'org.xutils:xutils:3.9.0' // 可选
-compileOnly 'org.xplugin:xplugin:1.3.8'
+compileOnly 'org.xplugin:xplugin:1.3.9'
 ```
 2. 初始化接口示例: [MyApplication](app/src/main/java/org/xplugin/demo/app/MyApplication.java)
 3. 在宿主或插件中的Manifest中添加 dependence 信息, 框架将自动异步加载依赖的插件模块, 参考 [AndroidManifest.xml](app/src/main/AndroidManifest.xml)
