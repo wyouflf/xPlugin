@@ -78,6 +78,11 @@ public class ModuleContextProxy extends ContextThemeWrapper {
     }
 
     @Override
+    public Context getApplicationContext() {
+        return module.getApplicationContext();
+    }
+
+    @Override
     public ClassLoader getClassLoader() {
         return module.getContext().getClassLoader();
     }
