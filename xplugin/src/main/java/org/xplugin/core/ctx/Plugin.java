@@ -1,9 +1,6 @@
 package org.xplugin.core.ctx;
 
 import android.content.Context;
-import android.content.pm.ActivityInfo;
-import android.content.pm.ProviderInfo;
-import android.content.pm.ServiceInfo;
 import android.text.TextUtils;
 
 import org.xplugin.core.install.Config;
@@ -121,25 +118,18 @@ public abstract class Plugin {
     }
 
     public boolean isActivityRegistered(String className) {
-        if (TextUtils.isEmpty(className)) return false;
-        ActivityInfo info = this.getConfig().findActivityInfoByClassName(className);
-        return info != null;
+        return this.getConfig().isActivityRegistered(className);
     }
 
     public boolean isServiceRegistered(String className) {
-        if (TextUtils.isEmpty(className)) return false;
-        ServiceInfo info = this.getConfig().findServiceInfoByClassName(className);
-        return info != null;
+        return this.getConfig().isServiceRegistered(className);
     }
 
     public boolean isProviderRegistered(String authority) {
-        if (TextUtils.isEmpty(authority)) return false;
-        ProviderInfo info = this.getConfig().findProviderInfoByAuthority(authority);
-        return info != null;
+        return this.getConfig().isProviderRegistered(authority);
     }
 
     public boolean isActionRegistered(String action) {
-        if (TextUtils.isEmpty(action)) return false;
         String className = this.getConfig().findClassNameByAction(action);
         return !TextUtils.isEmpty(className);
     }

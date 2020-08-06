@@ -6,11 +6,11 @@ import android.content.pm.ProviderInfo;
 import android.content.pm.ServiceInfo;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.text.TextUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -79,31 +79,39 @@ public final class Config {
     }
 
     public String findClassNameByAction(String action) {
+        if (TextUtils.isEmpty(action)) return null;
         return actionMap.get(action);
     }
 
     public ActivityInfo findActivityInfoByClassName(String className) {
-        return activityMap.get(className);
+        if (TextUtils.isEmpty(className)) return null;
+        ActivityInfo activityInfo = activityMap.get(className);
+        if (activityInfo != null) {
+            return new ActivityInfo(activityInfo);
+        }
+        return null;
     }
 
     public ServiceInfo findServiceInfoByClassName(String className) {
-        return serviceMap.get(className);
+        if (TextUtils.isEmpty(className)) return null;
+        ServiceInfo serviceInfo = serviceMap.get(className);
+        if (serviceInfo != null) {
+            return new ServiceInfo(serviceInfo);
+        }
+        return null;
     }
 
     public ProviderInfo findProviderInfoByAuthority(String authority) {
-        return providerMap.get(authority);
-    }
-
-    public List<ProviderInfo> getProviderList() {
-        if (providerMap.isEmpty()) return null;
-        List<ProviderInfo> list = new ArrayList<ProviderInfo>(providerMap.size());
-        list.addAll(providerMap.values());
-        return list;
+        if (TextUtils.isEmpty(authority)) return null;
+        ProviderInfo providerInfo = providerMap.get(authority);
+        if (providerInfo != null) {
+            return new ProviderInfo(providerInfo);
+        }
+        return null;
     }
 
     /**
-     * key: className
-     * value: actionList
+     * key: className, value: actionList
      */
     public Map<String, ArrayList<String>> getReceiverMap() {
         return new HashMap<String, ArrayList<String>>(receiverMap);
@@ -111,6 +119,21 @@ public final class Config {
 
     public static Bundle getAllModulesMetaData() {
         return allModulesMetaData;
+    }
+
+    public boolean isActivityRegistered(String className) {
+        if (TextUtils.isEmpty(className)) return false;
+        return activityMap.containsKey(className);
+    }
+
+    public boolean isServiceRegistered(String className) {
+        if (TextUtils.isEmpty(className)) return false;
+        return serviceMap.containsKey(className);
+    }
+
+    public boolean isProviderRegistered(String authority) {
+        if (TextUtils.isEmpty(authority)) return false;
+        return providerMap.containsKey(authority);
     }
 
     @Override

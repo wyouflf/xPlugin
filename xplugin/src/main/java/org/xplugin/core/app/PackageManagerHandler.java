@@ -1,5 +1,6 @@
 package org.xplugin.core.app;
 
+import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -7,6 +8,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.ProviderInfo;
 import android.content.pm.ResolveInfo;
+import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.Bundle;
 
@@ -51,21 +53,6 @@ import java.util.Map;
                     }
                     break;
                 }
-                case "resolveIntent": {
-                    /*ResolveInfo resolveIntent(in Intent intent, String resolvedType, int flags, int userId);*/
-                    Intent intent = new Intent((Intent) args[0]);
-                    Class<?> targetClass = IntentHelper.redirect2FakeActivity(intent);
-                    if (targetClass != null) {
-                        args[0] = intent;
-                        ResolveInfo resolveInfo = (ResolveInfo) method.invoke(mBase, args);
-                        if (resolveInfo != null && resolveInfo.activityInfo != null) {
-                            ActivityInfo info = resolveInfo.activityInfo;
-                            resolveActivityInfo(targetClass, info);
-                        }
-                        return resolveInfo;
-                    }
-                    break;
-                }
                 case "getApplicationInfo": {
                     /*ApplicationInfo getApplicationInfo(String packageName, int flags ,int userId);*/
                     ApplicationInfo info = (ApplicationInfo) method.invoke(mBase, args);
@@ -77,7 +64,7 @@ import java.util.Map;
                     }
                     return info;
                 }
-                case "getPackageInfo":
+                case "getPackageInfo": {
                     /*PackageInfo getPackageInfo(String packageName, int flags, int userId);*/
                     PackageInfo packageInfo = (PackageInfo) method.invoke(mBase, args);
                     if (packageInfo != null && packageInfo.applicationInfo != null) {
@@ -88,6 +75,39 @@ import java.util.Map;
                         info.metaData.putAll(Config.getAllModulesMetaData());
                     }
                     return packageInfo;
+                }
+                case "resolveIntent": {
+                    /*ResolveInfo resolveIntent(in Intent intent, String resolvedType, int flags, int userId);*/
+                    Intent intent = (Intent) args[0];
+                    Class<?> targetClass = IntentHelper.redirect2FakeActivity(intent);
+                    if (targetClass != null) {
+                        ResolveInfo resolveInfo = (ResolveInfo) method.invoke(mBase, args);
+                        if (resolveInfo != null && resolveInfo.activityInfo != null) {
+                            resolveActivityInfo(targetClass, resolveInfo.activityInfo);
+                        }
+                        return resolveInfo;
+                    }
+                    break;
+                }
+                case "resolveService": {
+                    /*ResolveInfo resolveService(in Intent intent, String resolvedType, int flags, int userId);*/
+                    Intent intent = (Intent) args[0];
+                    Service svc = ServicesProxy.findModuleService(intent);
+                    if (svc != null) {
+                        args[0] = new Intent(x.app(), ServicesProxy.class);
+                        ResolveInfo resolveInfo = (ResolveInfo) method.invoke(mBase, args);
+                        if (resolveInfo != null) {
+                            Config config = Plugin.getPlugin(svc).getConfig();
+                            ServiceInfo serviceInfo = config.findServiceInfoByClassName(svc.getClass().getName());
+                            if (serviceInfo != null) {
+                                resolveInfo.serviceInfo = serviceInfo;
+                                resolveInfo.serviceInfo.applicationInfo = x.app().getApplicationInfo();
+                            }
+                        }
+                        return resolveInfo;
+                    }
+                    break;
+                }
                 case "resolveContentProvider": {
                     /*ProviderInfo resolveContentProvider(String name, int flags, int userId);*/
                     ProviderInfo info = (ProviderInfo) method.invoke(mBase, args);
@@ -97,6 +117,9 @@ import java.util.Map;
                         info = findProviderInfoFromLoadedModules(authority, false);
                         if (info == null) {
                             info = findProviderInfoFromLoadedModules(authority, true);
+                        }
+                        if (info != null) {
+                            info.applicationInfo = x.app().getApplicationInfo();
                         }
                     }
                     return info;
@@ -129,13 +152,14 @@ import java.util.Map;
         return null;
     }
 
-    // 实际作用不大, 主要考虑到可能存在的兼容问题.
     private static void resolveActivityInfo(Class<?> targetClass, ActivityInfo info) {
         info.name = targetClass.getName();
         info.targetActivity = info.name;
-        Plugin plugin = Plugin.getPlugin(targetClass);
-        ActivityInfo realInfo = plugin.getConfig().findActivityInfoByClassName(info.name);
+        Config config = Plugin.getPlugin(targetClass).getConfig();
+        ActivityInfo realInfo = config.findActivityInfoByClassName(info.name);
         if (realInfo != null) {
+            // info.icon = realInfo.icon; // context 未替换前会调用 info#loadIcon
+            // info.labelRes = realInfo.labelRes; // context 未替换前会调用 info#loadLabel
             info.flags = realInfo.flags;
             info.launchMode = realInfo.launchMode;
             info.configChanges = realInfo.configChanges;
