@@ -2,6 +2,8 @@ package org.xplugin.demo.main;
 
 import android.app.LocalActivityManager;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -11,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import org.xplugin.core.msg.MsgCallback;
 import org.xplugin.core.msg.PluginMsg;
+import org.xutils.common.util.LogUtil;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -28,6 +31,10 @@ public class MainActivity extends AppCompatActivity {
 
         LinearLayout ll = findViewById(R.id.ll_test);
         ll.addView(activityManager.startActivity("ModuleMain", intent).getDecorView());
+
+        Intent service = new Intent(this, DemoService.class);
+        ResolveInfo resolveInfo = this.getPackageManager().resolveService(service, PackageManager.MATCH_DEFAULT_ONLY);
+        LogUtil.d("ResolveInfo: " + resolveInfo.serviceInfo.toString());
     }
 
     @Override
