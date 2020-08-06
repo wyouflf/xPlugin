@@ -57,6 +57,11 @@ public final class Module extends Plugin {
         return ((ModuleClassLoader) this.getClassLoader()).loadClass(name, true);
     }
 
+    @Override
+    public Context getApplicationContext() {
+        return application != null ? application : x.app();
+    }
+
     /**
      * 注册广播接收者
      */

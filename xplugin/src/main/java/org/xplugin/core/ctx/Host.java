@@ -1,8 +1,10 @@
 package org.xplugin.core.ctx;
 
 import android.app.Application;
+import android.content.Context;
 
 import org.xplugin.core.install.Config;
+import org.xutils.x;
 
 /**
  * Created by jiaolei on 15/6/10.
@@ -25,5 +27,10 @@ public final class Host extends Plugin {
             result = hostParentClassLoader.loadClass(name);
         }
         return result;
+    }
+
+    @Override
+    public Context getApplicationContext() {
+        return x.app();
     }
 }

@@ -177,6 +177,15 @@ public final class ModuleContext extends ContextWrapper {
         return this.resources;
     }
 
+    @Override
+    public Context getApplicationContext() {
+        Module module = this.classLoader.getModule();
+        if (module != null) {
+            return module.getApplicationContext();
+        }
+        return x.app();
+    }
+
     public File getPluginFile() {
         return pluginFile;
     }

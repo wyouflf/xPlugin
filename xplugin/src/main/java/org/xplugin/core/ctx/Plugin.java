@@ -95,6 +95,8 @@ public abstract class Plugin {
         return this.context;
     }
 
+    public abstract Context getApplicationContext();
+
     public final File getPluginFile() {
         if (context instanceof ModuleContext) {
             return ((ModuleContext) context).getPluginFile();
