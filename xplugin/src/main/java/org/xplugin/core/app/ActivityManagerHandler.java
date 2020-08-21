@@ -116,13 +116,13 @@ import java.lang.reflect.Method;
         return method.invoke(mBase, args);
     }
 
-    private static Activity getActivityByToken(Object arg) {
+    private static Activity getActivityByToken(Object token) {
         Activity activity = null;
         try {
             Reflector activityThreadReflector = Reflector.on("android.app.ActivityThread");
             Object activityThreadObj = activityThreadReflector.method("currentActivityThread").call();
             activityThreadReflector.bind(activityThreadObj);
-            activity = activityThreadReflector.method("getActivity", IBinder.class).call(arg);
+            activity = activityThreadReflector.method("getActivity", IBinder.class).call(token);
         } catch (Throwable ignored) {
         }
         return activity;
