@@ -30,17 +30,8 @@ public final class Module extends Plugin {
     public Module(ModuleContext context, Config config) {
         super(context, config);
         context.attachModule(this);
-    }
-
-    public final String findLibrary(String name) {
-        return ((ModuleClassLoader) this.getClassLoader()).findLibrary(name);
-    }
-
-    @Override
-    public void onLoaded() {
-        this.registerReceivers();
         this.makeApplication();
-        super.onLoaded();
+        this.registerReceivers();
     }
 
     @Override
@@ -50,6 +41,10 @@ public final class Module extends Plugin {
         if (application != null) {
             application.onTerminate();
         }
+    }
+
+    public final String findLibrary(String name) {
+        return ((ModuleClassLoader) this.getClassLoader()).findLibrary(name);
     }
 
     @Override
@@ -106,31 +101,37 @@ public final class Module extends Plugin {
     private void makeApplication() {
         final String appClassName = this.getConfig().getApplicationClassName();
         if (!TextUtils.isEmpty(appClassName)) {
+            try {
+                Instrumentation instrumentation = AndroidApiHook.getPluginInstrumentation();
+                application = instrumentation.newApplication(Module.this.getClassLoader(), appClassName, Module.this.getContext());
+                Reflector appReflector = Reflector.on(Application.class);
+                try {
+                    ReflectField mComponentCallbacksField = appReflector.field("mComponentCallbacks");
+                    mComponentCallbacksField.set(application, mComponentCallbacksField.get(x.app()));
+                } catch (Throwable warn) {
+                    LogUtil.w(warn.getMessage(), warn);
+                }
+                try {
+                    ReflectField mActivityLifecycleCallbacksField = appReflector.field("mActivityLifecycleCallbacks");
+                    mActivityLifecycleCallbacksField.set(application, mActivityLifecycleCallbacksField.get(x.app()));
+                } catch (Throwable warn) {
+                    LogUtil.w(warn.getMessage(), warn);
+                }
+                try {
+                    ReflectField mAssistCallbacksField = appReflector.field("mAssistCallbacks");
+                    mAssistCallbacksField.set(application, mAssistCallbacksField.get(x.app()));
+                } catch (Throwable warn) {
+                    LogUtil.w(warn.getMessage(), warn);
+                }
+            } catch (Throwable ex) {
+                LogUtil.e(ex.getMessage(), ex);
+            }
+
             x.task().autoPost(new Runnable() {
                 @Override
                 public void run() {
                     try {
                         Instrumentation instrumentation = AndroidApiHook.getPluginInstrumentation();
-                        application = instrumentation.newApplication(Module.this.getClassLoader(), appClassName, Module.this.getContext());
-                        Reflector appReflector = Reflector.on(Application.class);
-                        try {
-                            ReflectField mComponentCallbacksField = appReflector.field("mComponentCallbacks");
-                            mComponentCallbacksField.set(application, mComponentCallbacksField.get(x.app()));
-                        } catch (Throwable warn) {
-                            LogUtil.w(warn.getMessage(), warn);
-                        }
-                        try {
-                            ReflectField mActivityLifecycleCallbacksField = appReflector.field("mActivityLifecycleCallbacks");
-                            mActivityLifecycleCallbacksField.set(application, mActivityLifecycleCallbacksField.get(x.app()));
-                        } catch (Throwable warn) {
-                            LogUtil.w(warn.getMessage(), warn);
-                        }
-                        try {
-                            ReflectField mAssistCallbacksField = appReflector.field("mAssistCallbacks");
-                            mAssistCallbacksField.set(application, mAssistCallbacksField.get(x.app()));
-                        } catch (Throwable warn) {
-                            LogUtil.w(warn.getMessage(), warn);
-                        }
                         instrumentation.callApplicationOnCreate(application);
                     } catch (Throwable ex) {
                         LogUtil.e(ex.getMessage(), ex);
