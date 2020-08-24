@@ -24,7 +24,6 @@ import java.util.Set;
     private Host host;
 
     private HostParentClassLoader(Host host) {
-        PluginReflectUtil.init();
         this.host = host;
         // class loader结构:
         // bootClassLoader <-- HostParentClassLoader <-- appClassLoader
