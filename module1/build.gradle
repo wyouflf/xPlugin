@@ -4,6 +4,10 @@ android {
     compileSdkVersion 30
     buildToolsVersion "30.0.1"
 
+    lintOptions {
+        disable "Typos"
+    }
+
     aaptOptions {
         additionalParameters '--package-id', '0x80', '-I', "${rootDir}/runtime/main_rt_module1.apk", '--stable-ids', "${rootDir}/runtime/org.xplugin.demo.module1.id.txt"
     }

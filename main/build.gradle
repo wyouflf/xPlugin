@@ -4,6 +4,10 @@ android {
     compileSdkVersion 30
     buildToolsVersion "30.0.1"
 
+    lintOptions {
+        disable "Typos"
+    }
+
     aaptOptions {
         // 使用小于0x80的packageId需要添加 '--allow-reserved-package-id'
         // additionalParameters '--allow-reserved-package-id', '--package-id', '0x72',
@@ -122,7 +126,7 @@ android {
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.1'
 
     compileOnly project(path: ':xplugin')
     compileOnly 'org.xutils:xutils:3.9.0'
